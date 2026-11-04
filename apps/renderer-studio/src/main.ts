@@ -13,9 +13,16 @@ import faceCatalog from "./face-catalog.json";
 
 defineCustomElements();
 
-/** The harvested catalog: category -> filename -> [x, y] offset. */
+// Catalog: category -> filename -> [x, y] offset, plus a `_tones` block with
+// the real skin-tone palette baked from the face-base PNGs.
 type FaceCatalog = Record<string, Record<string, [number, number]>>;
+interface ToneTable {
+  order: string[]; // tone codes, light -> dark
+  hex: Record<string, string>; // tone code -> representative skin hex
+  shapes: Record<string, string[]>; // face shape -> tone codes it ships in
+}
 const CATALOG = faceCatalog as unknown as FaceCatalog;
+const TONES = (faceCatalog as unknown as { _tones: Record<"m" | "f", ToneTable> })._tones;
 
 function el<T extends HTMLElement>(id: string): T {
   const node = document.getElementById(id);
@@ -32,50 +39,30 @@ for (const n of BODY_TYPES) {
   bodySel.appendChild(opt);
 }
 
-// Skin tones actually used on Hattrick, surveyed across ~330 players
-// (light → dark). Shown as swatches instead of a free colour picker.
-const SKIN_TONES = [
-  "#f9e4d2", "#f6d8bc", "#f4dfb0", "#eccaba", "#ecaca2", "#f6c3b6", "#f4b9a3", "#eaa673",
-  "#e78e64", "#dab384", "#d89973", "#cc7a56", "#ca684b", "#c18472", "#bf7163", "#b97e58",
-  "#b58e63", "#a96743", "#a8583a", "#946040", "#925238", "#764d2f", "#754229",
-];
-let selectedSkin = "#f6d8bc";
-
-const swatchBox = el<HTMLDivElement>("skinSwatches");
-for (const tone of SKIN_TONES) {
-  const b = document.createElement("button");
-  b.type = "button";
-  b.className = "swatch";
-  b.style.background = tone;
-  b.title = tone;
-  b.setAttribute("aria-pressed", String(tone === selectedSkin));
-  b.addEventListener("click", () => {
-    selectedSkin = tone;
-    for (const child of swatchBox.children) child.setAttribute("aria-pressed", "false");
-    b.setAttribute("aria-pressed", "true");
-  });
-  swatchBox.appendChild(b);
-}
-
 // ---------------------------------------------------------------------------
-// Face-part picker
+// Skin + face-part picker
 //
-// Each row is one category. Categories, and their back-to-front draw order,
-// differ by gender. A selection assembles a flat faceElements array using the
-// per-part offset from the catalog; url is canonical root-relative
-// (/Img/Avatar/<cat>/<file>), which is what slimkit and real Hattrick pages
-// use. The hattrick-avatar preview wants paths relative to its base, so the
-// /Img/Avatar/ prefix is stripped just before previewing.
+// On Hattrick the face is a baked PNG whose skin tone lives in the filename
+// suffix (f<shape><tone>.png), consistent across shapes. The body mesh is then
+// tinted to match via `skinColor`. So skin is ONE control here: a tone swatch
+// sets the body colour AND selects that tone's face variant (nearest tone a
+// given shape actually ships, since not every shape has every tone).
+//
+// faceElements is a flat array of { url, x, y } with canonical root-relative
+// urls (/Img/Avatar/<cat>/<file>) — what slimkit and real Hattrick pages use.
 // ---------------------------------------------------------------------------
 
 interface CategoryDef {
-  key: string; // catalog key / path segment under /Img/Avatar/
+  key: string;
   label: string;
 }
 
-// Ordered back (drawn first) to front (drawn last).
-const MALE_CATEGORIES: CategoryDef[] = [
-  { key: "faces", label: "Face" },
+// The face base is handled by the shape+tone controls, so it is NOT in the
+// per-file dropdown list. Order is back (drawn first) to front (drawn last);
+// FACE marks where the resolved face base is inserted.
+const FACE = "@face";
+const MALE_ORDER: Array<CategoryDef | typeof FACE> = [
+  FACE,
   { key: "eyes", label: "Eyes" },
   { key: "noses", label: "Nose" },
   { key: "mouths", label: "Mouth" },
@@ -84,9 +71,9 @@ const MALE_CATEGORIES: CategoryDef[] = [
   { key: "hair", label: "Hair" },
   { key: "filled_hair", label: "Filled hair" },
 ];
-const FEMALE_CATEGORIES: CategoryDef[] = [
+const FEMALE_ORDER: Array<CategoryDef | typeof FACE> = [
   { key: "hair_f_behind", label: "Hair (behind)" },
-  { key: "faces_f", label: "Face" },
+  FACE,
   { key: "eyes_f", label: "Eyes" },
   { key: "noses_f", label: "Nose" },
   { key: "mouths_f", label: "Mouth" },
@@ -95,26 +82,96 @@ const FEMALE_CATEGORIES: CategoryDef[] = [
 ];
 
 let gender: "m" | "f" = "m";
+let selectedTone = "c"; // lightest-ish; reset per gender on load/toggle
 const pickerBox = el<HTMLDivElement>("facePicker");
+const swatchBox = el<HTMLDivElement>("skinSwatches");
 const facesTa = el<HTMLTextAreaElement>("faceElements");
 
-function categories(): CategoryDef[] {
-  return gender === "m" ? MALE_CATEGORIES : FEMALE_CATEGORIES;
+function toneTable(): ToneTable {
+  return TONES[gender];
+}
+function faceBaseCat(): string {
+  return gender === "m" ? "faces" : "faces_f";
+}
+function order(): Array<CategoryDef | typeof FACE> {
+  return gender === "m" ? MALE_ORDER : FEMALE_ORDER;
 }
 
-/** Natural sort so f2a precedes f10a. */
 function naturalSort(a: string, b: string): number {
   return a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" });
 }
 
+function hexLum(hex: string): number {
+  const n = parseInt(hex.slice(1), 16);
+  const r = (n >> 16) & 255;
+  const g = (n >> 8) & 255;
+  const b = n & 255;
+  return 0.3 * r + 0.59 * g + 0.11 * b;
+}
+
+/** Nearest tone (by luminance) that `shape` actually ships. */
+function resolveTone(shape: string, wanted: string): string {
+  const t = toneTable();
+  const avail = t.shapes[shape] ?? [];
+  if (avail.includes(wanted)) return wanted;
+  if (!avail.length) return wanted;
+  const target = hexLum(t.hex[wanted] ?? "#000000");
+  return avail.reduce((best, code) =>
+    Math.abs(hexLum(t.hex[code] ?? "#000000") - target) <
+    Math.abs(hexLum(t.hex[best] ?? "#000000") - target)
+      ? code
+      : best,
+  );
+}
+
+// --- Skin-tone swatches (the single skin control) ---------------------------
+function buildToneSwatches(): void {
+  swatchBox.replaceChildren();
+  const t = toneTable();
+  for (const code of t.order) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "swatch";
+    b.dataset.tone = code;
+    b.style.background = t.hex[code]!;
+    b.title = `${code} · ${t.hex[code]}`;
+    b.setAttribute("aria-pressed", String(code === selectedTone));
+    b.addEventListener("click", () => {
+      selectedTone = code;
+      for (const child of swatchBox.children) child.setAttribute("aria-pressed", "false");
+      b.setAttribute("aria-pressed", "true");
+      assembleFaces();
+    });
+    swatchBox.appendChild(b);
+  }
+}
+
+// --- Face shape + part dropdowns --------------------------------------------
 function buildPicker(): void {
   pickerBox.replaceChildren();
-  for (const cat of categories()) {
-    const files = Object.keys(CATALOG[cat.key] ?? {}).sort(naturalSort);
+  for (const entry of order()) {
+    if (entry === FACE) {
+      const label = document.createElement("label");
+      const shapes = Object.keys(toneTable().shapes).sort(naturalSort);
+      label.textContent = `Face shape (${shapes.length})`;
+      const sel = document.createElement("select");
+      sel.dataset.cat = FACE;
+      for (const sh of shapes) {
+        const opt = document.createElement("option");
+        opt.value = sh;
+        opt.textContent = `Face ${sh}`;
+        sel.appendChild(opt);
+      }
+      sel.addEventListener("change", assembleFaces);
+      pickerBox.appendChild(label);
+      pickerBox.appendChild(sel);
+      continue;
+    }
+    const files = Object.keys(CATALOG[entry.key] ?? {}).sort(naturalSort);
     const label = document.createElement("label");
-    label.textContent = `${cat.label} (${files.length})`;
+    label.textContent = `${entry.label} (${files.length})`;
     const sel = document.createElement("select");
-    sel.dataset.cat = cat.key;
+    sel.dataset.cat = entry.key;
     const none = document.createElement("option");
     none.value = "";
     none.textContent = "— none —";
@@ -131,7 +188,6 @@ function buildPicker(): void {
   }
 }
 
-/** A plausible default face so the preview/render is non-empty on load. */
 function applyDefaultSelection(): void {
   const first = (cat: string): string => {
     const files = Object.keys(CATALOG[cat] ?? {}).sort(naturalSort);
@@ -139,30 +195,40 @@ function applyDefaultSelection(): void {
   };
   const defaults: Record<string, string> =
     gender === "m"
-      ? { faces: first("faces"), eyes: first("eyes"), noses: first("noses"), mouths: first("mouths"), hair: first("hair") }
-      : { faces_f: first("faces_f"), eyes_f: first("eyes_f"), noses_f: first("noses_f"), mouths_f: first("mouths_f"), hair_f: first("hair_f") };
+      ? { eyes: first("eyes"), noses: first("noses"), mouths: first("mouths"), hair: first("hair") }
+      : { eyes_f: first("eyes_f"), noses_f: first("noses_f"), mouths_f: first("mouths_f"), hair_f: first("hair_f") };
   for (const sel of pickerBox.querySelectorAll<HTMLSelectElement>("select")) {
     const want = defaults[sel.dataset.cat ?? ""];
     if (want) sel.value = want;
   }
 }
 
-/** Read the selects, build faceElements, and sync the textarea + preview. */
+/** Read the controls, build faceElements, and sync textarea + preview. */
 function assembleFaces(): void {
   const parts: AvatarPart[] = [];
-  for (const cat of categories()) {
-    const sel = pickerBox.querySelector<HTMLSelectElement>(`select[data-cat="${cat.key}"]`);
+  const faceCat = faceBaseCat();
+  for (const entry of order()) {
+    if (entry === FACE) {
+      const shapeSel = pickerBox.querySelector<HTMLSelectElement>(`select[data-cat="${FACE}"]`);
+      const shape = shapeSel?.value;
+      if (!shape) continue;
+      const tone = resolveTone(shape, selectedTone);
+      const file = `f${shape}${tone}.png`;
+      const off = CATALOG[faceCat]?.[file] ?? [5, 5];
+      parts.push({ url: `/Img/Avatar/${faceCat}/${file}`, x: off[0], y: off[1] });
+      continue;
+    }
+    const sel = pickerBox.querySelector<HTMLSelectElement>(`select[data-cat="${entry.key}"]`);
     const file = sel?.value;
     if (!file) continue;
-    const off = CATALOG[cat.key]?.[file] ?? [5, 5];
-    parts.push({ url: `/Img/Avatar/${cat.key}/${file}`, x: off[0], y: off[1] });
+    const off = CATALOG[entry.key]?.[file] ?? [5, 5];
+    parts.push({ url: `/Img/Avatar/${entry.key}/${file}`, x: off[0], y: off[1] });
   }
   facesTa.value = JSON.stringify(parts, null, 2);
   updatePreview();
 }
 
-// Live face-part preview via the official hattrick-avatar component. Its part
-// images come straight from Hattrick (cross-origin, display only).
+// --- Live preview via the official hattrick-avatar component -----------------
 interface HattrickAvatarEl extends HTMLElement {
   base: string;
   facecard: boolean;
@@ -191,22 +257,27 @@ function updatePreview(): void {
 }
 facesTa.addEventListener("input", updatePreview);
 
-// Gender toggle rebuilds the picker and reselects defaults.
+// Gender toggle rebuilds the skin + picker controls for the gender.
 for (const btn of document.querySelectorAll<HTMLButtonElement>("#genderToggle button")) {
   btn.addEventListener("click", () => {
     gender = btn.dataset.gender === "f" ? "f" : "m";
     for (const b of document.querySelectorAll<HTMLButtonElement>("#genderToggle button")) {
       b.setAttribute("aria-pressed", String(b === btn));
     }
-    buildPicker();
-    applyDefaultSelection();
-    assembleFaces();
+    resetForGender();
   });
 }
 
-buildPicker();
-applyDefaultSelection();
-assembleFaces();
+function resetForGender(): void {
+  const o = toneTable().order;
+  selectedTone = o[Math.min(0, o.length - 1)] ?? o[0]!; // lightest
+  buildToneSwatches();
+  buildPicker();
+  applyDefaultSelection();
+  assembleFaces();
+}
+
+resetForGender();
 
 const stage = el<HTMLDivElement>("stage");
 const status = el<HTMLDivElement>("status");
@@ -232,7 +303,7 @@ function gatherInputs(): RenderInputs {
     bodyType,
     kitJson: el<HTMLInputElement>("kitJson").value.trim(),
     width: Number(el<HTMLInputElement>("width").value),
-    skinColor: selectedSkin,
+    skinColor: toneTable().hex[selectedTone]!, // body mesh matches the face tone
     neckPosition: Number(el<HTMLInputElement>("neckPosition").value),
     hairOffsetX: Number(el<HTMLInputElement>("hairOffsetX").value),
     hairOffsetY: Number(el<HTMLInputElement>("hairOffsetY").value),
