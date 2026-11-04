@@ -1,0 +1,19 @@
+{
+  "name": "renderer-studio",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Standalone test UI for hattrick-player-renderer: design a player and export the figure as PNG. No Hattrick at runtime.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "hattrick-player-renderer": "workspace:*"
+  },
+  "devDependencies": {
+    "vite": "^6.0.7"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "hattrick-mcp",
+  "version": "0.0.0",
+  "description": "An MCP server exposing read-only Hattrick CHPP data (team, players, economy, training, avatars) to AI assistants. Node port of the Go hattrick-mcp.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "hattrick-mcp": "./dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "start": "node dist/cli.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "hattrick-chpp-node": "workspace:*",
+    "hattrick-core": "workspace:*",
+    "zod": "^3.24.1"
+  }
+}

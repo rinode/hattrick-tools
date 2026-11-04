@@ -1,0 +1,29 @@
+{
+  "name": "hattrick-chpp-node",
+  "version": "0.0.0",
+  "description": "A TypeScript client for the Hattrick CHPP API (OAuth 1.0a), ported from lucianoq/hattrick.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "fast-xml-parser": "^4.5.1",
+    "hattrick-core": "workspace:*"
+  }
+}

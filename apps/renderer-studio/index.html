@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Hattrick Player Renderer — Studio</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f6f7f9;
+        --panel: #fff;
+        --line: #d9dde3;
+        --ink: #1b1f24;
+        --muted: #6b7280;
+        --accent: #2f6f4f;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #15181c;
+          --panel: #1e2228;
+          --line: #2c313a;
+          --ink: #e9edf2;
+          --muted: #9aa3af;
+          --accent: #5fbf8c;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font:
+          15px/1.5 system-ui,
+          sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+      }
+      header {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--line);
+      }
+      header h1 {
+        margin: 0;
+        font-size: 18px;
+      }
+      header p {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      main {
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        gap: 20px;
+        padding: 20px;
+        align-items: start;
+      }
+      @media (max-width: 720px) {
+        main {
+          grid-template-columns: 1fr;
+        }
+      }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 16px;
+      }
+      label {
+        display: block;
+        margin: 10px 0 4px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      input,
+      select,
+      textarea {
+        width: 100%;
+        padding: 7px 9px;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        background: var(--bg);
+        color: var(--ink);
+        font: inherit;
+      }
+      textarea {
+        font-family: ui-monospace, monospace;
+        font-size: 12px;
+        min-height: 84px;
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      button {
+        margin-top: 14px;
+        width: 100%;
+        padding: 9px;
+        border: 0;
+        border-radius: 8px;
+        background: var(--accent);
+        color: #fff;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      button.secondary {
+        background: transparent;
+        color: var(--accent);
+        border: 1px solid var(--accent);
+      }
+      #stage {
+        min-height: 440px;
+        display: grid;
+        place-items: center;
+        background: repeating-conic-gradient(
+            #0000 0 25%,
+            color-mix(in srgb, var(--line) 50%, transparent) 0 50%
+          )
+          0 0 / 24px 24px;
+        border-radius: 10px;
+      }
+      #status {
+        margin-top: 10px;
+        font-size: 13px;
+        color: var(--muted);
+        min-height: 18px;
+      }
+      code {
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Player Renderer — Studio</h1>
+      <p>
+        Design a full-body figure and export it. Runs entirely on vendored assets — no Hattrick at
+        runtime. Run <code>pnpm --filter hattrick-player-renderer fetch-assets</code> first.
+      </p>
+    </header>
+    <main>
+      <form id="controls" class="panel">
+        <label for="bodyType">Body type (1–12)</label>
+        <select id="bodyType"></select>
+
+        <div class="row">
+          <div>
+            <label for="skinColor">Skin colour</label>
+            <input id="skinColor" type="color" value="#eccaba" />
+          </div>
+          <div>
+            <label for="width">Width (px)</label>
+            <input id="width" type="number" value="240" min="40" max="800" />
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="neckPosition">Neck position</label>
+            <input id="neckPosition" type="number" value="87" />
+          </div>
+          <div>
+            <label for="hairOffsetX">Hair offset X</label>
+            <input id="hairOffsetX" type="number" value="0" />
+          </div>
+        </div>
+
+        <label for="hairOffsetY">Hair offset Y</label>
+        <input id="hairOffsetY" type="number" value="0" />
+
+        <label for="kitJson">Kit JSON URL (optional)</label>
+        <input id="kitJson" type="text" placeholder="/kits/sample/kitData.json or leave blank" />
+
+        <label for="faceElements">Face elements (JSON array)</label>
+        <textarea id="faceElements">[]</textarea>
+
+        <button id="renderBtn" type="submit">Render</button>
+        <button id="exportBtn" type="button" class="secondary">Export PNG</button>
+        <div id="status"></div>
+      </form>
+
+      <div id="stage" class="panel"></div>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

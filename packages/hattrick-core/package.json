@@ -1,0 +1,25 @@
+{
+  "name": "hattrick-core",
+  "version": "0.0.0",
+  "description": "Shared Hattrick domain types and helpers: skill denominations, specialties, and EUR money formatting.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  }
+}
