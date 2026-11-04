@@ -16,7 +16,7 @@ A pnpm + turborepo monorepo of [Hattrick](https://www.hattrick.org) CHPP tooling
 ```sh
 pnpm install
 pnpm build
-pnpm test        # 41 tests
+pnpm test        # 46 tests
 ```
 
 Credentials (reuse your existing CHPP app's consumer key/secret; the access token comes from a one-time login):
@@ -39,7 +39,7 @@ Per-player face PNGs and kit data stay dynamic — they come from the input-prov
 
 ## Apps
 
-**MCP server** — `pnpm --filter hattrick-mcp build`, then `node apps/hattrick-mcp/dist/cli.js serve` (stdio) or `… http` (remote, needs `HATTRICK_MCP_TOKEN`). Tools: `get_team`, `get_players`, `get_economy`, `get_training`, `get_avatars`. Money is shown in EUR; skills as `name (n)`.
+**MCP server** — `pnpm --filter hattrick-mcp build`, then `node apps/hattrick-mcp/dist/cli.js serve` (stdio) or `… http` (remote, needs `HATTRICK_MCP_TOKEN`). Tools: `get_team`, `get_players`, `get_economy`, `get_training`, `get_avatars`, `get_matches`, `get_ladders`, `get_ladder_details`, `search_transfers`. Money is shown in EUR; skills as `name (n)`.
 
 **Renderer studio** — `pnpm --filter renderer-studio dev`, then design + export. Fully standalone (serves the vendored assets).
 
@@ -47,4 +47,4 @@ Per-player face PNGs and kit data stay dynamic — they come from the input-prov
 
 ## Status
 
-Endpoint coverage in `hattrick-chpp-node` is being expanded (currently avatars, players, teamdetails, economy, training). The browser render paths (studio, team-photo) are typed and built here but are exercised in a real browser against live assets.
+Endpoint coverage in `hattrick-chpp-node` is being expanded (currently avatars, players, teamdetails, economy, training, matches, ladderlist, ladderdetails, transfersearch). The browser render paths (studio, team-photo) are typed and built here but are exercised in a real browser against live assets.

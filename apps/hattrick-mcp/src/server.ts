@@ -5,8 +5,12 @@ import { TtlCache } from "./cache.js";
 import {
   humanizeAvatars,
   humanizeEconomy,
+  humanizeLadderDetails,
+  humanizeLadders,
+  humanizeMatches,
   humanizeTeamPlayers,
   humanizeTraining,
+  humanizeTransfers,
 } from "./humanize.js";
 
 export const INSTRUCTIONS = `Read-only access to the authorised manager's Hattrick.org data via CHPP.
@@ -106,6 +110,79 @@ export function buildServer(creds: OAuthCredentials, opts: ServerOptions = {}): 
         team_id ? client.getAvatars(team_id, kind) : client.getMyAvatars(kind),
       );
       return text(humanizeAvatars(avatars));
+    },
+  );
+
+  server.registerTool(
+    "get_matches",
+    { description: "Recent and upcoming matches of a team, with results.", inputSchema: teamId },
+    async ({ team_id }) => {
+      const m = await cache.get(`matches:${team_id ?? "me"}`, () =>
+        team_id ? client.getMatches(team_id) : client.getMyMatches(),
+      );
+      return text(humanizeMatches(m));
+    },
+  );
+
+  server.registerTool(
+    "get_ladders",
+    { description: "Ladders a team currently takes part in.", inputSchema: teamId },
+    async ({ team_id }) => {
+      const l = await cache.get(`ladders:${team_id ?? "me"}`, () =>
+        team_id ? client.getLadders(team_id) : client.getMyLadders(),
+      );
+      return text(humanizeLadders(l));
+    },
+  );
+
+  server.registerTool(
+    "get_ladder_details",
+    {
+      description: "The ranking table of a ladder.",
+      inputSchema: {
+        ladder_id: z.number().int().positive(),
+        page_index: z.number().int().nonnegative().optional(),
+      },
+    },
+    async ({ ladder_id, page_index }) => {
+      const d = await cache.get(`ladderdetails:${ladder_id}:${page_index ?? 0}`, () =>
+        client.getLadderDetails(ladder_id, { pageIndex: page_index }),
+      );
+      return text(humanizeLadderDetails(d));
+    },
+  );
+
+  server.registerTool(
+    "search_transfers",
+    {
+      description:
+        "Search the transfer market by age range and a primary skill filter (prices in EUR).",
+      inputSchema: {
+        age_min: z.number().int(),
+        age_max: z.number().int(),
+        skill_id: z
+          .number()
+          .int()
+          .describe(
+            "1 keeper, 2 stamina, 3 set pieces, 4 defending, 5 scoring, 6 winger, 7 passing, 8 playmaking, 10 leadership, 11 experience",
+          ),
+        skill_min: z.number().int().min(0).max(20),
+        skill_max: z.number().int().min(0).max(20),
+        price_max_eur: z.number().nonnegative().optional(),
+        page_index: z.number().int().nonnegative().optional(),
+      },
+    },
+    async ({ age_min, age_max, skill_id, skill_min, skill_max, price_max_eur, page_index }) => {
+      const res = await client.searchTransfers({
+        ageMin: age_min,
+        ageMax: age_max,
+        skillId: skill_id,
+        skillMin: skill_min,
+        skillMax: skill_max,
+        priceMaxSek: price_max_eur === undefined ? undefined : price_max_eur * 10,
+        pageIndex: page_index,
+      });
+      return text(humanizeTransfers(res));
     },
   );
 

@@ -1,0 +1,31 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# build output
+dist/
+*.tsbuildinfo
+
+# turbo
+.turbo/
+
+# env & secrets
+.env
+.env.*
+!.env.example
+credentials.json
+
+# Vendored Hattrick full-body assets (SVG/JSON/TXT/JS + face part PNGs) are
+# committed on purpose for this private repo — see
+# packages/hattrick-player-renderer/vendor. Refresh with:
+#   pnpm --filter hattrick-player-renderer fetch-assets
+
+# binaries — never commit compiled artifacts to git
+*.exe
+*.wasm
+*.node
+
+# os / editor
+.DS_Store
+*.log
+coverage/

@@ -113,3 +113,107 @@ export interface Training {
   /** Player ids receiving special (stamina) training. */
   specialTrainingPlayerIds: number[];
 }
+
+/** A single match (past, ongoing or upcoming). */
+export interface Match {
+  matchId: number;
+  homeTeamId: number;
+  homeTeamName: string;
+  awayTeamId: number;
+  awayTeamName: string;
+  matchDate: string;
+  sourceSystem: string;
+  matchType: number;
+  matchContextId: number;
+  homeGoals: number;
+  awayGoals: number;
+  /** FINISHED / ONGOING / UPCOMING code. */
+  status: number;
+  ordersGiven: boolean;
+}
+
+/** A team's recent and upcoming matches. */
+export interface TeamMatches {
+  teamId: number;
+  teamName: string;
+  matches: Match[];
+}
+
+/** A ladder a team takes part in (from ladderlist). */
+export interface Ladder {
+  id: number;
+  name: string;
+  position: number;
+  nextMatchDate: string;
+  wins: number;
+  lost: number;
+}
+
+/** One team's ranking row within a ladder. */
+export interface LadderTeam {
+  id: number;
+  name: string;
+  position: number;
+  wins: number;
+  lost: number;
+  winsInARow: number;
+  lostInARow: number;
+}
+
+/** A ladder's ranking table (a page of it). */
+export interface LadderDetails {
+  id: number;
+  name: string;
+  numOfTeams: number;
+  pageSize: number;
+  pageIndex: number;
+  kingTeamId: number;
+  kingTeamName: string;
+  teams: LadderTeam[];
+}
+
+/** A single transfer-market listing. */
+export interface TransferListing {
+  playerId: number;
+  firstName: string;
+  nickName: string;
+  lastName: string;
+  askingPriceSek: number;
+  deadline: string;
+  highestBidSek: number;
+  age: number;
+  ageDays: number;
+  salarySek: number;
+  tsi: number;
+  form: number;
+  experience: number;
+  specialtyId: number;
+  keeperSkill: number;
+  playmakerSkill: number;
+  scorerSkill: number;
+  passingSkill: number;
+  wingerSkill: number;
+  defenderSkill: number;
+  setPiecesSkill: number;
+  staminaSkill: number;
+}
+
+/** A page of transfer-search results. */
+export interface TransferSearchResults {
+  /** Total matches across pages (-1 means "over 100"). */
+  itemCount: number;
+  pageSize: number;
+  pageIndex: number;
+  results: TransferListing[];
+}
+
+/** Filters for a transfer-market search (primary skill filter required). */
+export interface TransferSearchQuery {
+  ageMin: number;
+  ageMax: number;
+  skillId: number;
+  skillMin: number;
+  skillMax: number;
+  priceMaxSek?: number;
+  pageIndex?: number;
+}

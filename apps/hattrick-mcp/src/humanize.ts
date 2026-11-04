@@ -1,5 +1,15 @@
 import { denominate, formatSekAsEur, skillLevelName, specialtyName } from "hattrick-core";
-import type { Economy, Player, PlayerAvatars, TeamPlayers, Training } from "hattrick-chpp-node";
+import type {
+  Economy,
+  Ladder,
+  LadderDetails,
+  Player,
+  PlayerAvatars,
+  TeamMatches,
+  TeamPlayers,
+  Training,
+  TransferSearchResults,
+} from "hattrick-chpp-node";
 
 /** Denominates a 0–20 skill as "name (n)", omitted entirely when 0. */
 function skill(n: number): string | undefined {
@@ -108,4 +118,80 @@ export function humanizeAvatars(avatars: PlayerAvatars[]): Record<string, unknow
     backgroundImage: a.avatar.backgroundImage,
     layers: a.avatar.layers,
   }));
+}
+
+const MATCH_STATUS: Record<number, string> = { 0: "upcoming", 1: "ongoing", 2: "finished" };
+
+export function humanizeMatches(tm: TeamMatches): Record<string, unknown> {
+  return {
+    teamId: tm.teamId,
+    teamName: tm.teamName,
+    matches: tm.matches.map((m) =>
+      compact({
+        matchId: m.matchId,
+        home: m.homeTeamName,
+        away: m.awayTeamName,
+        result: m.status === 2 ? `${m.homeGoals}–${m.awayGoals}` : undefined,
+        status: MATCH_STATUS[m.status] ?? String(m.status),
+        date: m.matchDate,
+        matchType: m.matchType,
+        sourceSystem: m.sourceSystem,
+        ordersGiven: m.ordersGiven,
+      }),
+    ),
+  };
+}
+
+export function humanizeLadders(ladders: Ladder[]): Record<string, unknown>[] {
+  return ladders.map((l) => ({
+    id: l.id,
+    name: l.name,
+    position: l.position,
+    record: `${l.wins}W–${l.lost}L`,
+    nextMatchDate: l.nextMatchDate,
+  }));
+}
+
+export function humanizeLadderDetails(d: LadderDetails): Record<string, unknown> {
+  return {
+    id: d.id,
+    name: d.name,
+    teams: d.numOfTeams,
+    king: d.kingTeamName,
+    page: d.pageIndex,
+    ranking: d.teams.map((t) => ({
+      position: t.position,
+      team: t.name,
+      record: `${t.wins}W–${t.lost}L`,
+    })),
+  };
+}
+
+export function humanizeTransfers(res: TransferSearchResults): Record<string, unknown> {
+  return {
+    matches: res.itemCount < 0 ? "100+" : res.itemCount,
+    page: res.pageIndex,
+    results: res.results.map((r) =>
+      compact({
+        playerId: r.playerId,
+        name: [r.firstName, r.nickName, r.lastName].filter(Boolean).join(" "),
+        askingPrice: formatSekAsEur(r.askingPriceSek),
+        highestBid: r.highestBidSek ? formatSekAsEur(r.highestBidSek) : undefined,
+        deadline: r.deadline,
+        age: r.ageDays ? `${r.age} years ${r.ageDays} days` : r.age,
+        salary: r.salarySek ? formatSekAsEur(r.salarySek) : undefined,
+        tsi: r.tsi,
+        form: skill(r.form),
+        experience: skill(r.experience),
+        specialty: specialtyName(r.specialtyId),
+        keeper: skill(r.keeperSkill),
+        defending: skill(r.defenderSkill),
+        playmaking: skill(r.playmakerSkill),
+        winger: skill(r.wingerSkill),
+        passing: skill(r.passingSkill),
+        scoring: skill(r.scorerSkill),
+        setPieces: skill(r.setPiecesSkill),
+      }),
+    ),
+  };
 }

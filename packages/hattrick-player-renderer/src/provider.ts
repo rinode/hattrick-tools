@@ -1,5 +1,5 @@
 import { parseInitArgs } from "./parse.js";
-import { HATTRICK_ORIGIN, renderInputs, type RendererOptions } from "./browser.js";
+import { HATTRICK_ORIGIN, renderInputs, type RenderOutput, type RendererOptions } from "./browser.js";
 import type { RenderInputs } from "./types.js";
 
 /**
@@ -36,7 +36,7 @@ export async function renderByPlayerId(
   playerId: number,
   container: HTMLElement,
   opts: RendererOptions & { fetchPage?: PageFetcher } = {},
-): Promise<HTMLCanvasElement> {
+): Promise<RenderOutput> {
   const inputs = await resolveInputsByPlayerId(playerId, { fetchPage: opts.fetchPage });
   return renderInputs(inputs, container, opts);
 }

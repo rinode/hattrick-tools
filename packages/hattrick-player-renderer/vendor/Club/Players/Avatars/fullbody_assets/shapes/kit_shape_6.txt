@@ -1,0 +1,7 @@
+
+
+<g id="kit_shape_6">
+<path vector-effect="non-scaling-stroke"   d="
+M 100 74.9
+L 100 24.9 50 0 0 25 0 75 50 100 100 74.9 Z"/>
+</g>

@@ -109,9 +109,13 @@ describe("MCP server (in-memory client)", () => {
     expect(tools.tools.map((t) => t.name).sort()).toEqual([
       "get_avatars",
       "get_economy",
+      "get_ladder_details",
+      "get_ladders",
+      "get_matches",
       "get_players",
       "get_team",
       "get_training",
+      "search_transfers",
     ]);
 
     const res = await client.callTool({ name: "get_players", arguments: {} });

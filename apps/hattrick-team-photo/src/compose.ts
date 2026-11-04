@@ -1,3 +1,4 @@
+import type { RenderOutput } from "hattrick-player-renderer";
 import type { Layout, LayoutOptions } from "./layout.js";
 
 /**
@@ -6,7 +7,7 @@ import type { Layout, LayoutOptions } from "./layout.js";
  * earlier ones correctly).
  */
 export function composeTeamPhoto(
-  canvases: Array<HTMLCanvasElement | null>,
+  canvases: Array<RenderOutput | null>,
   layout: Layout,
   opts: LayoutOptions,
 ): HTMLCanvasElement {

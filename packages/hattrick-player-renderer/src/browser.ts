@@ -3,7 +3,7 @@ import type { RenderInputs } from "./types.js";
 /** Hattrick's full-body renderer, as exposed on `window.HT.FullBodies`. */
 interface HtFullBodies {
   init(
-    faceElements: unknown[],
+    faceElements: unknown,
     assetsPath: string,
     meshPath: string,
     outlinePath: string,
@@ -28,6 +28,9 @@ declare global {
 export const HATTRICK_ORIGIN = "https://www.hattrick.org";
 export const DEFAULT_SLIMKIT_URL = `${HATTRICK_ORIGIN}/Club/Players/Avatars/slimkitrender.js`;
 export const DEFAULT_FULLBODIES_URL = `${HATTRICK_ORIGIN}/Club/Players/Avatars/HT.FullBodies.js`;
+
+/** What the renderer appends and returns: a canvas or an img (data-URI). */
+export type RenderOutput = HTMLCanvasElement | HTMLImageElement;
 
 export interface RendererOptions {
   /** URL of Hattrick's slimkitrender bundle. */
@@ -66,6 +69,34 @@ export function absolutize(pathOrUrl: string, origin: string): string {
   return origin.replace(/\/$/, "") + pathOrUrl;
 }
 
+interface FaceNode {
+  url: string;
+  x: number;
+  y: number;
+  next: FaceNode | null;
+}
+
+/**
+ * slimkitrender walks face parts as a `.next`-linked chain starting at
+ * element 0, and with an empty array it reads `undefined.url` and throws —
+ * while a null value makes it skip faces and render the bare body. So build
+ * the linked chain for a non-empty set, and return null for an empty one.
+ */
+export function faceChain(
+  parts: ReadonlyArray<{ url: string; x: number; y: number }>,
+  origin: string,
+): FaceNode[] | null {
+  if (!parts || parts.length === 0) return null;
+  const nodes: FaceNode[] = parts.map((p) => ({
+    url: absolutize(p.url, origin),
+    x: p.x,
+    y: p.y,
+    next: null,
+  }));
+  for (let i = 0; i < nodes.length - 1; i++) nodes[i]!.next = nodes[i + 1]!;
+  return nodes;
+}
+
 let containerSeq = 0;
 
 /**
@@ -81,14 +112,14 @@ export async function renderInputs(
   inputs: RenderInputs,
   container: HTMLElement,
   opts: RendererOptions = {},
-): Promise<HTMLCanvasElement> {
+): Promise<RenderOutput> {
   const fb = await loadRenderer(opts);
   const origin = opts.assetOrigin ?? HATTRICK_ORIGIN;
 
   if (!container.id) container.id = `ht-fullbody-${++containerSeq}`;
 
   fb.init(
-    inputs.faceElements.map((p) => ({ ...p, url: absolutize(p.url, origin) })),
+    faceChain(inputs.faceElements, origin),
     absolutize(inputs.assetsPath, origin),
     absolutize(inputs.meshPath, origin),
     absolutize(inputs.outlinePath, origin),
@@ -102,14 +133,26 @@ export async function renderInputs(
   );
   fb.render(container.id);
 
+  // slimkit appends its result (a <canvas>, or an <img> data-URI like the real
+  // Hattrick page uses) once compositing finishes. Resolve the instant that
+  // element appears — matching only "canvas" is why detection used to miss it.
   return new Promise((resolve, reject) => {
-    const started = Date.now();
-    const poll = () => {
-      const canvas = container.querySelector("canvas");
-      if (canvas) return resolve(canvas);
-      if (Date.now() - started > 15000) return reject(new Error("render timed out"));
-      requestAnimationFrame(poll);
-    };
-    poll();
+    const found = () => container.querySelector("canvas, img") as RenderOutput | null;
+    const existing = found();
+    if (existing) return resolve(existing);
+    const observer = new MutationObserver(() => {
+      const output = found();
+      if (output) {
+        observer.disconnect();
+        resolve(output);
+      }
+    });
+    observer.observe(container, { childList: true, subtree: true });
+    setTimeout(() => {
+      observer.disconnect();
+      const output = found();
+      if (output) resolve(output);
+      else reject(new Error("renderer produced no output element"));
+    }, 30000);
   });
 }

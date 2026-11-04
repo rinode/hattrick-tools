@@ -93,6 +93,59 @@
         grid-template-columns: 1fr 1fr;
         gap: 10px;
       }
+      .swatches {
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        gap: 6px;
+        margin-top: 4px;
+      }
+      .swatch {
+        aspect-ratio: 1;
+        border-radius: 6px;
+        border: 2px solid transparent;
+        cursor: pointer;
+        padding: 0;
+        margin: 0;
+      }
+      .swatch[aria-pressed="true"] {
+        border-color: var(--ink);
+        box-shadow:
+          0 0 0 2px var(--panel),
+          0 0 0 4px var(--accent);
+      }
+      .toggle {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+        margin-top: 4px;
+      }
+      .toggle button {
+        margin: 0;
+        padding: 7px;
+        background: var(--bg);
+        color: var(--ink);
+        border: 1px solid var(--line);
+        font-weight: 500;
+      }
+      .toggle button[aria-pressed="true"] {
+        background: var(--accent);
+        color: #fff;
+        border-color: var(--accent);
+      }
+      .picker select {
+        margin-bottom: 2px;
+      }
+      details > summary {
+        cursor: pointer;
+        font-size: 13px;
+        color: var(--muted);
+        margin-top: 10px;
+      }
+      .face-preview {
+        display: grid;
+        place-items: center;
+        min-height: 60px;
+      }
       button {
         margin-top: 14px;
         width: 100%;
@@ -135,8 +188,10 @@
     <header>
       <h1>Player Renderer — Studio</h1>
       <p>
-        Design a full-body figure and export it. Runs entirely on vendored assets — no Hattrick at
-        runtime. Run <code>pnpm --filter hattrick-player-renderer fetch-assets</code> first.
+        Design a player and export the figure. The body, kit and outlines are vendored (run
+        <code>pnpm --filter hattrick-player-renderer fetch-assets</code> first). The face picker's
+        live preview pulls part images from Hattrick; the full-body figure shows faces only once the
+        face PNGs are vendored too.
       </p>
     </header>
     <main>
@@ -144,16 +199,11 @@
         <label for="bodyType">Body type (1–12)</label>
         <select id="bodyType"></select>
 
-        <div class="row">
-          <div>
-            <label for="skinColor">Skin colour</label>
-            <input id="skinColor" type="color" value="#eccaba" />
-          </div>
-          <div>
-            <label for="width">Width (px)</label>
-            <input id="width" type="number" value="240" min="40" max="800" />
-          </div>
-        </div>
+        <label>Skin tone</label>
+        <div id="skinSwatches" class="swatches"></div>
+
+        <label for="width">Width (px)</label>
+        <input id="width" type="number" value="240" min="40" max="800" />
 
         <div class="row">
           <div>
@@ -170,10 +220,22 @@
         <input id="hairOffsetY" type="number" value="0" />
 
         <label for="kitJson">Kit JSON URL (optional)</label>
-        <input id="kitJson" type="text" placeholder="/kits/sample/kitData.json or leave blank" />
+        <input id="kitJson" type="text" value="/sample-kit.json" />
 
-        <label for="faceElements">Face elements (JSON array)</label>
-        <textarea id="faceElements">[]</textarea>
+        <label>Face</label>
+        <div id="genderToggle" class="toggle">
+          <button type="button" data-gender="m" aria-pressed="true">Male</button>
+          <button type="button" data-gender="f" aria-pressed="false">Female</button>
+        </div>
+        <div id="facePicker" class="picker"></div>
+
+        <label>Face preview (hattrick-avatar)</label>
+        <div id="facePreview" class="face-preview"></div>
+
+        <details>
+          <summary>Face elements (advanced)</summary>
+          <textarea id="faceElements">[]</textarea>
+        </details>
 
         <button id="renderBtn" type="submit">Render</button>
         <button id="exportBtn" type="button" class="secondary">Export PNG</button>

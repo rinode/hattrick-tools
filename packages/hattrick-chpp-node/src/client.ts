@@ -5,11 +5,18 @@ import type {
   Avatar,
   AvatarKind,
   Economy,
+  Ladder,
+  LadderDetails,
+  Match,
   Player,
   PlayerAvatars,
   TeamDetails,
+  TeamMatches,
   TeamPlayers,
   Training,
+  TransferListing,
+  TransferSearchQuery,
+  TransferSearchResults,
 } from "./models.js";
 
 export const AVATARS_FILE = "avatars";
@@ -22,6 +29,14 @@ export const ECONOMY_FILE = "economy";
 export const ECONOMY_VERSION = "1.4";
 export const TRAINING_FILE = "training";
 export const TRAINING_VERSION = "2.2";
+export const MATCHES_FILE = "matches";
+export const MATCHES_VERSION = "2.9";
+export const LADDERLIST_FILE = "ladderlist";
+export const LADDERLIST_VERSION = "1.0";
+export const LADDERDETAILS_FILE = "ladderdetails";
+export const LADDERDETAILS_VERSION = "1.0";
+export const TRANSFERSEARCH_FILE = "transfersearch";
+export const TRANSFERSEARCH_VERSION = "1.1";
 
 /**
  * A typed client for the Hattrick CHPP API. One method per operation,
@@ -109,12 +124,74 @@ export class HattrickClient {
   async getTraining(teamId: number): Promise<Training> {
     return mapTraining(await this.get(TRAINING_FILE, TRAINING_VERSION, { teamId: String(teamId) }));
   }
+
+  // --- matches ---
+
+  /** Recent and upcoming matches for the requesting user's own team. */
+  async getMyMatches(): Promise<TeamMatches> {
+    return mapMatches(await this.get(MATCHES_FILE, MATCHES_VERSION, {}));
+  }
+
+  /** Recent and upcoming matches for the given team. */
+  async getMatches(teamId: number): Promise<TeamMatches> {
+    return mapMatches(await this.get(MATCHES_FILE, MATCHES_VERSION, { teamId: String(teamId) }));
+  }
+
+  // --- ladders ---
+
+  /** Ladders the requesting user's own team takes part in. */
+  async getMyLadders(): Promise<Ladder[]> {
+    return mapLadders(await this.get(LADDERLIST_FILE, LADDERLIST_VERSION, {}));
+  }
+
+  /** Ladders the given team takes part in. */
+  async getLadders(teamId: number): Promise<Ladder[]> {
+    return mapLadders(
+      await this.get(LADDERLIST_FILE, LADDERLIST_VERSION, { teamId: String(teamId) }),
+    );
+  }
+
+  /** A ladder's ranking table (optionally a given page, or around a team). */
+  async getLadderDetails(
+    ladderId: number,
+    opts: { teamId?: number; pageIndex?: number; pageSize?: number } = {},
+  ): Promise<LadderDetails> {
+    const values: Record<string, string> = { ladderId: String(ladderId) };
+    if (opts.teamId) values.teamId = String(opts.teamId);
+    if (opts.pageIndex !== undefined) values.pageIndex = String(opts.pageIndex);
+    if (opts.pageSize !== undefined) values.pageSize = String(opts.pageSize);
+    return mapLadderDetails(await this.get(LADDERDETAILS_FILE, LADDERDETAILS_VERSION, values));
+  }
+
+  // --- transfer search ---
+
+  /** Searches the transfer market by age range and a primary skill filter. */
+  async searchTransfers(q: TransferSearchQuery): Promise<TransferSearchResults> {
+    const values: Record<string, string> = {
+      ageMin: String(q.ageMin),
+      ageMax: String(q.ageMax),
+      skillType1: String(q.skillId),
+      minSkillValue1: String(q.skillMin),
+      maxSkillValue1: String(q.skillMax),
+      pageIndex: String(q.pageIndex ?? 0),
+    };
+    if (q.priceMaxSek !== undefined) values.priceMax = String(q.priceMaxSek);
+    return mapTransferSearch(await this.get(TRANSFERSEARCH_FILE, TRANSFERSEARCH_VERSION, values));
+  }
 }
 
 // --- mappers (XML object -> typed model) ---
 
 function rec(v: unknown): Record<string, unknown> {
   return (v ?? {}) as Record<string, unknown>;
+}
+
+/** Normalizes CHPP match status (numeric or word form) to 0/1/2. */
+function matchStatus(v: unknown): number {
+  const s = str(v).toUpperCase();
+  if (s === "1" || s === "ONGOING") return 1;
+  if (s === "2" || s === "FINISHED") return 2;
+  return 0; // 0 / UPCOMING / absent
 }
 
 export function mapAvatars(root: HattrickData): PlayerAvatars[] {
@@ -229,6 +306,109 @@ export function mapTraining(root: HattrickData): Training {
     specialTrainingPlayerIds: asArray<Record<string, unknown>>(special["Player"]).map((p) =>
       num(p["PlayerID"]),
     ),
+  };
+}
+
+export function mapMatches(root: HattrickData): TeamMatches {
+  const team = rec(root["Team"]);
+  const list = rec(team["MatchList"]);
+  return {
+    teamId: num(team["TeamID"]),
+    teamName: str(team["TeamName"]),
+    matches: asArray<Record<string, unknown>>(list["Match"]).map(mapMatch),
+  };
+}
+
+function mapMatch(m: Record<string, unknown>): Match {
+  const home = rec(m["HomeTeam"]);
+  const away = rec(m["AwayTeam"]);
+  return {
+    matchId: num(m["MatchID"]),
+    homeTeamId: num(home["HomeTeamID"]),
+    homeTeamName: str(home["HomeTeamName"]),
+    awayTeamId: num(away["AwayTeamID"]),
+    awayTeamName: str(away["AwayTeamName"]),
+    matchDate: str(m["MatchDate"]),
+    sourceSystem: str(m["SourceSystem"]),
+    matchType: num(m["MatchType"]),
+    matchContextId: num(m["MatchContextId"]),
+    homeGoals: num(m["HomeGoals"]),
+    awayGoals: num(m["AwayGoals"]),
+    status: matchStatus(m["Status"]),
+    ordersGiven: bool(m["OrdersGiven"]),
+  };
+}
+
+export function mapLadders(root: HattrickData): Ladder[] {
+  const ladders = rec(root["Ladders"]);
+  return asArray<Record<string, unknown>>(ladders["Ladder"]).map((l) => ({
+    id: num(l["LadderId"]),
+    name: str(l["Name"]),
+    position: num(l["Posistion"]), // CHPP's own spelling
+    nextMatchDate: str(l["NextMatchDate"]),
+    wins: num(l["Wins"]),
+    lost: num(l["Lost"]),
+  }));
+}
+
+export function mapLadderDetails(root: HattrickData): LadderDetails {
+  const l = rec(root["Ladder"]);
+  return {
+    id: num(l["LadderId"]),
+    name: str(l["Name"]),
+    numOfTeams: num(l["NumOfTeams"]),
+    pageSize: num(l["PageSize"]),
+    pageIndex: num(l["PageIndex"]),
+    kingTeamId: num(l["KingTeamId"]),
+    kingTeamName: str(l["KingTeamName"]),
+    teams: asArray<Record<string, unknown>>(l["Team"]).map((t) => ({
+      id: num(t["TeamId"]),
+      name: str(t["TeamName"]),
+      position: num(t["Position"]),
+      wins: num(t["Wins"]),
+      lost: num(t["Lost"]),
+      winsInARow: num(t["WinsInARow"]),
+      lostInARow: num(t["LostInARow"]),
+    })),
+  };
+}
+
+export function mapTransferSearch(root: HattrickData): TransferSearchResults {
+  const ts = rec(root["TransferSearch"]);
+  const results = rec(ts["TransferResults"]);
+  return {
+    itemCount: num(ts["ItemCount"]),
+    pageSize: num(ts["PageSize"]),
+    pageIndex: num(ts["PageIndex"]),
+    results: asArray<Record<string, unknown>>(results["TransferResult"]).map(mapTransferListing),
+  };
+}
+
+function mapTransferListing(r: Record<string, unknown>): TransferListing {
+  const d = rec(r["Details"]);
+  return {
+    playerId: num(r["PlayerId"]),
+    firstName: str(r["FirstName"]),
+    nickName: str(r["NickName"]),
+    lastName: str(r["LastName"]),
+    askingPriceSek: num(r["AskingPrice"]),
+    deadline: str(r["Deadline"]),
+    highestBidSek: num(r["HighestBid"]),
+    age: num(d["Age"]),
+    ageDays: num(d["AgeDays"]),
+    salarySek: num(d["Salary"]),
+    tsi: num(d["TSI"]),
+    form: num(d["PlayerForm"]),
+    experience: num(d["Experience"]),
+    specialtyId: num(d["Specialty"]),
+    keeperSkill: num(d["KeeperSkill"]),
+    playmakerSkill: num(d["PlaymakerSkill"]),
+    scorerSkill: num(d["ScorerSkill"]),
+    passingSkill: num(d["PassingSkill"]),
+    wingerSkill: num(d["WingerSkill"]),
+    defenderSkill: num(d["DefenderSkill"]),
+    setPiecesSkill: num(d["SetPiecesSkill"]),
+    staminaSkill: num(d["StaminaSkill"]),
   };
 }
 

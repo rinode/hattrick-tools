@@ -50,7 +50,7 @@ async function generate(): Promise<void> {
     return r.text();
   };
 
-  const canvases: Array<HTMLCanvasElement | null> = [];
+  const canvases: Array<import("hattrick-player-renderer").RenderOutput | null> = [];
   for (let i = 0; i < roster.length; i++) {
     status.textContent = `Rendering ${i + 1}/${roster.length}…`;
     const holder = document.createElement("div");
