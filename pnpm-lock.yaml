@@ -47,6 +47,9 @@ importers:
       hattrick-player-renderer:
         specifier: workspace:*
         version: link:../../packages/hattrick-player-renderer
+      hattrick-theme:
+        specifier: workspace:*
+        version: link:../../packages/hattrick-theme
     devDependencies:
       vite:
         specifier: ^6.0.7
@@ -73,6 +76,9 @@ importers:
       hattrick-player-renderer:
         specifier: workspace:*
         version: link:../../packages/hattrick-player-renderer
+      hattrick-theme:
+        specifier: workspace:*
+        version: link:../../packages/hattrick-theme
     devDependencies:
       vite:
         specifier: ^6.0.7
@@ -90,6 +96,8 @@ importers:
   packages/hattrick-core: {}
 
   packages/hattrick-player-renderer: {}
+
+  packages/hattrick-theme: {}
 
 packages:
 

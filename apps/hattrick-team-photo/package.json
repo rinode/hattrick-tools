@@ -12,7 +12,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "hattrick-player-renderer": "workspace:*"
+    "hattrick-player-renderer": "workspace:*",
+    "hattrick-theme": "workspace:*"
   },
   "devDependencies": {
     "vite": "^6.0.7"

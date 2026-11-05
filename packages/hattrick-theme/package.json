@@ -1,0 +1,10 @@
+{
+  "name": "hattrick-theme",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Shared visual theme (Hattrick palette and base styles) for the frontend apps.",
+  "exports": {
+    "./theme.css": "./theme.css"
+  },
+  "files": ["theme.css"]
+}

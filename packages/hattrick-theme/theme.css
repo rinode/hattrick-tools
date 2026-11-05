@@ -1,0 +1,144 @@
+/* Shared theme for the Hattrick tools frontends. Colors and type are taken
+   from hattrick.org's own stylesheet so the apps match the game. */
+@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap");
+
+:root {
+  color-scheme: light dark;
+
+  /* Hattrick brand */
+  --ht-field: #7bb381; /* pitch green */
+  --ht-green: #3f7137; /* primary */
+  --ht-green-dark: #1b6924;
+  --ht-green-bright: #389442; /* accent / links */
+  --ht-gold: #ffc000; /* ratings */
+  --ht-panel-head: #dce2dc;
+
+  /* surfaces + text */
+  --bg: #eef1ec;
+  --panel: #ffffff;
+  --surface: #f3f5f3;
+  --line: #c9d2c9;
+  --ink: #1b2420;
+  --muted: #5c665f;
+  --accent: var(--ht-green);
+  --link: var(--ht-green-bright);
+  --radius: 4px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ht-field: #2c5233;
+    --ht-green: #4f9a56;
+    --ht-green-dark: #3f7137;
+    --ht-green-bright: #6fcf77;
+    --ht-panel-head: #253029;
+    --bg: #141c17;
+    --panel: #1b2620;
+    --surface: #202b24;
+    --line: #324037;
+    --ink: #e7efe8;
+    --muted: #9fb0a3;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font:
+    14px/1.5 "Roboto",
+    Verdana,
+    Helvetica,
+    sans-serif;
+  letter-spacing: 0.2px;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+header {
+  background: var(--ht-green);
+  color: #fff;
+  padding: 14px 20px;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+header p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+header a {
+  color: #fff;
+}
+
+a {
+  color: var(--link);
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+label {
+  display: block;
+  margin: 10px 0 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+  width: 100%;
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+button {
+  margin-top: 14px;
+  width: 100%;
+  padding: 9px;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: #fff;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+button:hover {
+  background: var(--ht-green-dark);
+}
+
+button.secondary {
+  margin-top: 14px;
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+button.secondary:hover {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}

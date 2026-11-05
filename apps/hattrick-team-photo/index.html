@@ -4,133 +4,16 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Hattrick Team Photo</title>
-    <style>
-      :root {
-        color-scheme: light dark;
-        --bg: #f6f7f9;
-        --panel: #fff;
-        --line: #d9dde3;
-        --ink: #1b1f24;
-        --muted: #6b7280;
-        --accent: #2f6f4f;
-      }
-      @media (prefers-color-scheme: dark) {
-        :root {
-          --bg: #15181c;
-          --panel: #1e2228;
-          --line: #2c313a;
-          --ink: #e9edf2;
-          --muted: #9aa3af;
-          --accent: #5fbf8c;
-        }
-      }
-      * {
-        box-sizing: border-box;
-      }
-      body {
-        margin: 0;
-        font:
-          15px/1.5 system-ui,
-          sans-serif;
-        background: var(--bg);
-        color: var(--ink);
-      }
-      header {
-        padding: 16px 20px;
-        border-bottom: 1px solid var(--line);
-      }
-      header h1 {
-        margin: 0;
-        font-size: 18px;
-      }
-      header p {
-        margin: 4px 0 0;
-        color: var(--muted);
-        font-size: 13px;
-      }
-      main {
-        display: grid;
-        grid-template-columns: 280px 1fr;
-        gap: 20px;
-        padding: 20px;
-        align-items: start;
-      }
-      @media (max-width: 720px) {
-        main {
-          grid-template-columns: 1fr;
-        }
-      }
-      .panel {
-        background: var(--panel);
-        border: 1px solid var(--line);
-        border-radius: 10px;
-        padding: 16px;
-      }
-      label {
-        display: block;
-        margin: 10px 0 4px;
-        font-size: 13px;
-        color: var(--muted);
-      }
-      input[type="number"] {
-        width: 100%;
-        padding: 7px 9px;
-        border: 1px solid var(--line);
-        border-radius: 7px;
-        background: var(--bg);
-        color: var(--ink);
-        font: inherit;
-      }
-      .check {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-top: 12px;
-      }
-      button {
-        margin-top: 14px;
-        width: 100%;
-        padding: 9px;
-        border: 0;
-        border-radius: 8px;
-        background: var(--accent);
-        color: #fff;
-        font-weight: 600;
-        cursor: pointer;
-      }
-      button.secondary {
-        background: transparent;
-        color: var(--accent);
-        border: 1px solid var(--accent);
-      }
-      #stage {
-        overflow: auto;
-        background: var(--panel);
-        border: 1px solid var(--line);
-        border-radius: 10px;
-        padding: 12px;
-        min-height: 440px;
-      }
-      #status {
-        margin-top: 10px;
-        font-size: 13px;
-        color: var(--muted);
-        min-height: 18px;
-      }
-    </style>
   </head>
   <body>
     <header>
       <h1>Team Photo</h1>
-      <p>
-        Pulls your roster from CHPP, renders each full-body figure, and arranges them into staggered
-        rows.
-      </p>
+      <p>Renders your squad into a team photo.</p>
     </header>
     <main>
       <form id="controls" class="panel">
         <div id="auth" style="margin-bottom: 12px"></div>
-        <div id="roster">Loading roster…</div>
+        <div id="roster">Loading roster</div>
         <label for="rows">Rows</label>
         <input id="rows" type="number" value="3" min="1" max="8" />
         <label for="maxPerRow">Max per row</label>

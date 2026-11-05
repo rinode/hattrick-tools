@@ -1,3 +1,5 @@
+import "hattrick-theme/theme.css";
+import "./app.css";
 import {
   assetPathsForBody,
   BODY_TYPES,
