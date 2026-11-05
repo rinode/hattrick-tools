@@ -11,9 +11,16 @@
       <p>Renders your squad into a team photo.</p>
     </header>
     <main>
-      <form id="controls" class="panel">
+      <div id="controls" class="panel">
         <div id="auth" style="margin-bottom: 12px"></div>
-        <div id="roster">Loading roster</div>
+
+        <label>Squad <span id="teamName" class="team-name"></span></label>
+        <div id="squad" class="squad"></div>
+
+        <label for="bgFile">Background</label>
+        <input id="bgFile" type="file" accept="image/*" />
+        <button id="bgClear" type="button" class="secondary">Remove background</button>
+
         <label for="rows">Rows</label>
         <input id="rows" type="number" value="3" min="1" max="8" />
         <label for="maxPerRow">Max per row</label>
@@ -23,10 +30,10 @@
             >Stagger rows</label
           >
         </div>
-        <button id="generateBtn" type="submit">Generate photo</button>
-        <button id="exportBtn" type="button" class="secondary">Export PNG</button>
+
+        <button id="exportBtn" type="button">Export PNG</button>
         <div id="status"></div>
-      </form>
+      </div>
       <div id="stage" class="panel"></div>
     </main>
     <script type="module" src="/src/main.ts"></script>

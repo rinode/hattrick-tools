@@ -23,13 +23,22 @@ interface SquadPlayer {
   avatar: PlayerAvatar | null;
 }
 
+interface SquadItem {
+  player: SquadPlayer;
+  enabled: boolean;
+}
+
 // The app is served under a base path (/team-photo), so the API and the local
 // vendor assets live under it too. BASE_URL is "/team-photo/" in the build and
 // "/" if ever served at the root. VITE_API_BASE still overrides the API origin.
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 const API_BASE = (import.meta.env.VITE_API_BASE ?? BASE).replace(/\/$/, "");
 
-let roster: SquadPlayer[] = [];
+let squad: SquadItem[] = [];
+// Each player's figure is rendered once and reused; toggling, reordering,
+// layout and background changes only recompose, which is instant.
+const figureCache = new Map<number, RenderOutput | null>();
+let background: HTMLImageElement | null = null;
 let composed: HTMLCanvasElement | null = null;
 
 function layoutOptions(): LayoutOptions {
@@ -41,69 +50,150 @@ function layoutOptions(): LayoutOptions {
   };
 }
 
-async function loadRoster(): Promise<void> {
-  const res = await fetch(`${API_BASE}/api/squad`, { credentials: "include" });
-  if (!res.ok) throw new Error(await res.text());
-  const data = (await res.json()) as { teamName: string; players: SquadPlayer[] };
-  roster = data.players;
-  el("roster").textContent = `${data.teamName}: ${roster.length} players`;
+function figureInputs(player: SquadPlayer) {
+  const inputs = renderInputsFromAvatar(player.avatar!, { gender: player.gender });
+  // Route the remote kit data through the worker's same-origin proxy. Face
+  // parts (/Img/Avatar/…) are already same-origin via assetOrigin.
+  inputs.kitJson = inputs.kitJson.replace(/^(?:https?:)?\/\/res\.hattrick\.org\//, "/_kit/");
+  return inputs;
 }
 
-async function generate(): Promise<void> {
-  const opts = layoutOptions();
-  const stage = el("stage");
+/** Renders every player's figure once into the cache. Expensive; run on load. */
+async function renderFigures(): Promise<void> {
   const status = el("status");
-  stage.replaceChildren();
-
   const temp = document.createElement("div");
   temp.style.cssText = "position:absolute;left:-9999px;top:0";
   document.body.appendChild(temp);
 
-  const canvases: Array<RenderOutput | null> = [];
-  for (let i = 0; i < roster.length; i++) {
-    status.textContent = `Rendering ${i + 1}/${roster.length}…`;
-    const holder = document.createElement("div");
-    temp.appendChild(holder);
-    const player = roster[i]!;
-    try {
-      if (!player.avatar) throw new Error("no avatar");
-      // Full-body inputs straight from the CHPP avatar — no page scrape.
-      const inputs = renderInputsFromAvatar(player.avatar, { gender: player.gender });
-      // Route the remote kit data through the worker's same-origin proxy, so the
-      // fetch isn't cross-origin. Face parts (/Img/Avatar/…) are already
-      // same-origin via assetOrigin + the worker's /Img/Avatar proxy.
-      inputs.kitJson = inputs.kitJson.replace(/^(?:https?:)?\/\/res\.hattrick\.org\//, "/_kit/");
-      canvases.push(
-        await renderInputs(inputs, holder, {
-          assetOrigin: location.origin + BASE,
-          slimKitUrl: `${BASE}/Club/Players/Avatars/slimkitrender.js`,
-          fullBodiesUrl: `${BASE}/Club/Players/Avatars/HT.FullBodies.js`,
-        }),
-      );
-    } catch (err) {
-      console.error(`player ${player.id}`, err);
-      canvases.push(null);
+  let done = 0;
+  for (const { player } of squad) {
+    if (!figureCache.has(player.id)) {
+      status.textContent = `Rendering ${done + 1}/${squad.length}`;
+      const holder = document.createElement("div");
+      temp.appendChild(holder);
+      try {
+        if (!player.avatar) throw new Error("no avatar");
+        figureCache.set(
+          player.id,
+          await renderInputs(figureInputs(player), holder, {
+            assetOrigin: location.origin + BASE,
+            slimKitUrl: `${BASE}/Club/Players/Avatars/slimkitrender.js`,
+            fullBodiesUrl: `${BASE}/Club/Players/Avatars/HT.FullBodies.js`,
+          }),
+        );
+      } catch (err) {
+        console.error(`player ${player.id}`, err);
+        figureCache.set(player.id, null);
+      }
     }
+    done++;
   }
   temp.remove();
-
-  const layout = computeLayout(roster.length, opts);
-  composed = composeTeamPhoto(canvases, layout, opts);
-  composed.style.maxWidth = "100%";
-  stage.replaceChildren(composed);
-  status.textContent = `Rendered ${canvases.filter(Boolean).length}/${roster.length}.`;
+  status.textContent = "";
 }
 
-el<HTMLFormElement>("controls").addEventListener("submit", (event) => {
-  event.preventDefault();
-  generate().catch((err) => {
-    el("status").textContent = "Error: " + (err instanceof Error ? err.message : String(err));
+/** Composes the enabled figures, in order, over the background. Instant. */
+function recompose(): void {
+  const stage = el("stage");
+  const enabled = squad.filter((i) => i.enabled).map((i) => i.player);
+  if (enabled.length === 0) {
+    composed = null;
+    stage.replaceChildren();
+    el("status").textContent = "No players selected.";
+    return;
+  }
+  const canvases = enabled.map((p) => figureCache.get(p.id) ?? null);
+  const opts = layoutOptions();
+  composed = composeTeamPhoto(canvases, computeLayout(enabled.length, opts), opts, background);
+  composed.style.maxWidth = "100%";
+  stage.replaceChildren(composed);
+  el("status").textContent = `${canvases.filter(Boolean).length}/${enabled.length} rendered.`;
+}
+
+function move(index: number, delta: number): void {
+  const to = index + delta;
+  if (to < 0 || to >= squad.length) return;
+  [squad[index], squad[to]] = [squad[to]!, squad[index]!];
+  renderSquadList();
+  recompose();
+}
+
+function renderSquadList(): void {
+  const list = el("squad");
+  list.replaceChildren();
+  squad.forEach((item, i) => {
+    const row = document.createElement("div");
+    row.className = "squad-item" + (item.enabled ? "" : " disabled");
+
+    const check = document.createElement("input");
+    check.type = "checkbox";
+    check.checked = item.enabled;
+    check.addEventListener("change", () => {
+      item.enabled = check.checked;
+      row.classList.toggle("disabled", !item.enabled);
+      recompose();
+    });
+
+    const name = document.createElement("span");
+    name.className = "name";
+    name.textContent = item.player.name || `#${item.player.number}`;
+
+    const up = document.createElement("button");
+    up.type = "button";
+    up.className = "mv";
+    up.textContent = "↑";
+    up.disabled = i === 0;
+    up.addEventListener("click", () => move(i, -1));
+
+    const down = document.createElement("button");
+    down.type = "button";
+    down.className = "mv";
+    down.textContent = "↓";
+    down.disabled = i === squad.length - 1;
+    down.addEventListener("click", () => move(i, 1));
+
+    row.append(check, name, up, down);
+    list.appendChild(row);
   });
+}
+
+async function loadRoster(): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/squad`, { credentials: "include" });
+  if (!res.ok) throw new Error(await res.text());
+  const data = (await res.json()) as { teamName: string; players: SquadPlayer[] };
+  squad = data.players.map((player) => ({ player, enabled: true }));
+  figureCache.clear();
+  el("teamName").textContent = data.teamName;
+  renderSquadList();
+  await renderFigures();
+  recompose();
+}
+
+// Layout controls only affect composition, so they recompose instantly.
+for (const id of ["rows", "maxPerRow", "stagger"]) {
+  el<HTMLInputElement>(id).addEventListener("input", () => recompose());
+}
+
+el<HTMLInputElement>("bgFile").addEventListener("change", (event) => {
+  const file = (event.target as HTMLInputElement).files?.[0];
+  if (!file) return;
+  const img = new Image();
+  img.onload = () => {
+    background = img;
+    recompose();
+  };
+  img.src = URL.createObjectURL(file);
+});
+
+el<HTMLButtonElement>("bgClear").addEventListener("click", () => {
+  background = null;
+  el<HTMLInputElement>("bgFile").value = "";
+  recompose();
 });
 
 el<HTMLButtonElement>("exportBtn").addEventListener("click", () => {
   if (!composed) {
-    el("status").textContent = "Generate the photo first.";
+    el("status").textContent = "Nothing to export yet.";
     return;
   }
   const link = document.createElement("a");
@@ -123,7 +213,6 @@ async function init(): Promise<void> {
   }
 
   if (!connected) {
-    el("roster").textContent = "";
     auth.innerHTML =
       '<a href="' +
       `${API_BASE}/api/auth/login` +
@@ -143,5 +232,5 @@ async function init(): Promise<void> {
 }
 
 init().catch((err) => {
-  el("roster").textContent = "Error: " + (err instanceof Error ? err.message : String(err));
+  el("status").textContent = "Error: " + (err instanceof Error ? err.message : String(err));
 });
