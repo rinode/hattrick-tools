@@ -79,11 +79,14 @@ async function renderFigures(): Promise<void> {
   const stage = el("stage");
   const loader = document.createElement("div");
   loader.className = "loader";
+  const wrap = document.createElement("div");
+  wrap.className = "spinner-wrap";
   const spinner = document.createElement("div");
   spinner.className = "spinner";
   const count = document.createElement("div");
   count.className = "loader-count";
-  loader.append(spinner, count);
+  wrap.append(spinner, count);
+  loader.append(wrap);
   stage.replaceChildren(loader);
 
   let done = 0;
