@@ -178,14 +178,41 @@ async function showSquad(label: string): Promise<void> {
   recompose();
 }
 
-async function loadRoster(): Promise<void> {
-  const res = await fetch(`${API_BASE}/api/squad`, { credentials: "include" });
+async function loadRoster(teamId?: number): Promise<void> {
+  const url = `${API_BASE}/api/squad${teamId ? `?teamId=${teamId}` : ""}`;
+  const res = await fetch(url, { credentials: "include" });
   if (!res.ok) throw new Error(await res.text());
   const data = (await res.json()) as { teamName: string; players: SquadPlayer[] };
   squad = data.players
     .filter((p) => p.avatar)
     .map((p) => ({ id: p.id, name: p.name || `#${p.number}`, enabled: true, inputs: avatarInputs(p) }));
   await showSquad(data.teamName);
+}
+
+/** Populates the team picker when the user owns more than one team. */
+async function loadTeams(): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/teams`, { credentials: "include" });
+  if (!res.ok) return;
+  const { teams } = (await res.json()) as {
+    teams: { id: number; name: string; primary: boolean }[];
+  };
+  if (teams.length <= 1) return;
+
+  const select = el<HTMLSelectElement>("team");
+  select.replaceChildren();
+  for (const t of teams) {
+    const opt = document.createElement("option");
+    opt.value = String(t.id);
+    opt.textContent = t.name;
+    opt.selected = t.primary;
+    select.appendChild(opt);
+  }
+  el("teamPick").style.display = "";
+  select.addEventListener("change", () => {
+    loadRoster(Number(select.value)).catch((err) => {
+      el("status").textContent = "Error: " + (err instanceof Error ? err.message : String(err));
+    });
+  });
 }
 
 /** A randomly generated 22-player demo with the default kit (no connection). */
@@ -260,6 +287,7 @@ async function init(): Promise<void> {
       location.reload(),
     );
   });
+  await loadTeams();
   await loadRoster();
 }
 

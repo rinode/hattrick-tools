@@ -78,7 +78,7 @@ export function randomRenderInputs(opts: RandomAvatarOptions = {}): RenderInputs
     meshPath: `${assetsPath}/uvs_m/kit_${bodyType}_tri.json`,
     outlinePath: `${assetsPath}/outlines_vector_m/full_body_kit_${bodyType}.svg`,
     bodyType,
-    kitJson: opts.kitJson ?? "/sample-kit.json",
+    kitJson: opts.kitJson ?? "/default-kit.json",
     width: opts.width ?? DEFAULT_FIGURE_WIDTH,
     skinColor: skinForTone(tone),
     neckPosition: neckForFaceShape(Number(shape)),

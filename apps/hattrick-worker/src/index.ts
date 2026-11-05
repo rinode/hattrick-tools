@@ -85,19 +85,42 @@ app.post(`${BASE}/api/auth/logout`, (c) => {
   return c.json({ ok: true });
 });
 
-/** The signed-in user's squad: roster + gender joined with avatar layers. */
-app.get(`${BASE}/api/squad`, async (c) => {
-  const sess = await unseal<AccessToken>(c.env.SESSION_SECRET, getCookie(c, SESS));
-  if (!sess?.accessToken) return c.json({ error: "not connected" }, 401);
-
-  const client = new HattrickClient({
+function clientFor(c: { env: Env }, sess: AccessToken): HattrickClient {
+  return new HattrickClient({
     consumerKey: c.env.HATTRICK_CONSUMER_KEY,
     consumerSecret: c.env.HATTRICK_CONSUMER_SECRET,
     accessToken: sess.accessToken,
     accessSecret: sess.accessSecret,
   });
+}
+
+/** The signed-in user's teams (a Supporter may own several). */
+app.get(`${BASE}/api/teams`, async (c) => {
+  const sess = await unseal<AccessToken>(c.env.SESSION_SECRET, getCookie(c, SESS));
+  if (!sess?.accessToken) return c.json({ error: "not connected" }, 401);
   try {
-    const [team, avatars] = await Promise.all([client.getMyPlayers(), client.getMyAvatars()]);
+    const details = await clientFor(c, sess).getMyTeamDetails();
+    return c.json({
+      teams: details.teams.map((t) => ({ id: t.id, name: t.name, primary: t.isPrimaryClub })),
+    });
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : String(err) }, 502);
+  }
+});
+
+/** A squad: roster + gender joined with avatar layers. Defaults to the primary
+ *  team; pass ?teamId= to pick another of the user's teams. */
+app.get(`${BASE}/api/squad`, async (c) => {
+  const sess = await unseal<AccessToken>(c.env.SESSION_SECRET, getCookie(c, SESS));
+  if (!sess?.accessToken) return c.json({ error: "not connected" }, 401);
+
+  const client = clientFor(c, sess);
+  const teamId = Number(c.req.query("teamId")) || 0;
+  try {
+    const [team, avatars] = await Promise.all([
+      teamId ? client.getPlayers(teamId) : client.getMyPlayers(),
+      teamId ? client.getAvatars(teamId) : client.getMyAvatars(),
+    ]);
     const byId = new Map(avatars.map((a) => [a.playerId, a.avatar]));
     return c.json({
       teamId: team.teamId,

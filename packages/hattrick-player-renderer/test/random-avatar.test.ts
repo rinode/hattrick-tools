@@ -17,7 +17,7 @@ describe("randomRenderInputs", () => {
       expect(r.bodyType).toBeGreaterThanOrEqual(1);
       expect(r.bodyType).toBeLessThanOrEqual(12);
       expect(r.skinColor).toMatch(/^#[0-9a-f]{6}$/i);
-      expect(r.kitJson).toBe("/sample-kit.json");
+      expect(r.kitJson).toBe("/default-kit.json");
     }
   });
 

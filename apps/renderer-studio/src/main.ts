@@ -293,7 +293,7 @@ function gatherInputs(): RenderInputs {
     outlinePath: paths.outlinePath,
     bodyType,
     // Fall back to the default Hattrick kit when the field is empty.
-    kitJson: el<HTMLInputElement>("kitJson").value.trim() || "/sample-kit.json",
+    kitJson: el<HTMLInputElement>("kitJson").value.trim() || "/default-kit.json",
     width: Number(el<HTMLInputElement>("width").value),
     skinColor: toneTable().hex[selectedTone]!,
     neckPosition: Number(el<HTMLInputElement>("neckPosition").value),

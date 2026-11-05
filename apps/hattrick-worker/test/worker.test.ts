@@ -42,6 +42,11 @@ describe("worker /team-photo/api", () => {
     expect(res.status).toBe(401);
   });
 
+  it("401s on /team-photo/api/teams without a session", async () => {
+    const res = await app.request("/team-photo/api/teams", {}, env);
+    expect(res.status).toBe(401);
+  });
+
   it("login redirects to Hattrick's authorize URL", async () => {
     // getRequestToken calls CHPP; stub global fetch to return a request token.
     const orig = globalThis.fetch;
