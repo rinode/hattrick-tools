@@ -68,7 +68,7 @@ export async function getRequestToken(
   consumerSecret: string,
   /** Callback URL the user is redirected back to, or "oob" for the PIN flow. */
   callback: string = "oob",
-  fetchImpl: FetchLike = globalThis.fetch as unknown as FetchLike,
+  fetchImpl: FetchLike = globalThis.fetch.bind(globalThis) as unknown as FetchLike,
 ): Promise<RequestToken> {
   const url = `${CHPP_OAUTH_BASE}request_token.ashx`;
   const params = { ...baseOauthParams(consumerKey), oauth_callback: callback };
@@ -94,7 +94,7 @@ export async function getAccessToken(
   requestToken: string,
   requestSecret: string,
   verifier: string,
-  fetchImpl: FetchLike = globalThis.fetch as unknown as FetchLike,
+  fetchImpl: FetchLike = globalThis.fetch.bind(globalThis) as unknown as FetchLike,
 ): Promise<AccessToken> {
   const url = `${CHPP_OAUTH_BASE}access_token.ashx`;
   const params = {

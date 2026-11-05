@@ -36,7 +36,10 @@ export function buildUrl(
 export class Transport {
   constructor(
     private readonly creds: OAuthCredentials,
-    private readonly fetchImpl: FetchLike = globalThis.fetch as unknown as FetchLike,
+    // Bind the default so it carries its own `this`. Workers rejects a global
+    // fetch invoked with any other `this` ("Illegal invocation"), which is what
+    // calling it as a method (this.fetchImpl(...)) would do.
+    private readonly fetchImpl: FetchLike = globalThis.fetch.bind(globalThis) as unknown as FetchLike,
   ) {}
 
   async getRawXml(
@@ -46,7 +49,10 @@ export class Transport {
   ): Promise<string> {
     const url = buildUrl(file, version, values);
     const { header } = await sign("GET", url, this.creds);
-    const res = await this.fetchImpl(url, { method: "GET", headers: { Authorization: header } });
+    // Call via a local, not this.fetchImpl(...), so a caller-supplied fetch is
+    // invoked without `this` bound to this Transport.
+    const doFetch = this.fetchImpl;
+    const res = await doFetch(url, { method: "GET", headers: { Authorization: header } });
     const text = await res.text();
     if (!res.ok) {
       throw new Error(`CHPP GET ${file} failed: HTTP ${res.status}`);
@@ -62,7 +68,8 @@ export class Transport {
   ): Promise<string> {
     const url = buildUrl(file, version, values);
     const { header } = await sign("POST", url, this.creds, { bodyParams: { lineup } });
-    const res = await this.fetchImpl(url, {
+    const doFetch = this.fetchImpl;
+    const res = await doFetch(url, {
       method: "POST",
       headers: {
         Authorization: header,
