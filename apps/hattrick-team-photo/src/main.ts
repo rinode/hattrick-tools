@@ -1,9 +1,11 @@
 import "hattrick-theme/theme.css";
 import "./app.css";
 import {
+  randomRenderInputs,
   renderInputs,
   renderInputsFromAvatar,
   type PlayerAvatar,
+  type RenderInputs,
   type RenderOutput,
 } from "hattrick-player-renderer";
 import { composeTeamPhoto, naturalSize } from "./compose.js";
@@ -24,8 +26,10 @@ interface SquadPlayer {
 }
 
 interface SquadItem {
-  player: SquadPlayer;
+  id: number;
+  name: string;
   enabled: boolean;
+  inputs: RenderInputs;
 }
 
 // The app is served under a base path (/team-photo), so the API and the local
@@ -35,8 +39,8 @@ const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 const API_BASE = (import.meta.env.VITE_API_BASE ?? BASE).replace(/\/$/, "");
 
 let squad: SquadItem[] = [];
-// Each player's figure is rendered once and reused; toggling, reordering,
-// layout and background changes only recompose, which is instant.
+// Each figure is rendered once and reused; toggling, reordering, layout and
+// background changes only recompose, which is instant.
 const figureCache = new Map<number, RenderOutput | null>();
 let background: HTMLImageElement | null = null;
 let composed: HTMLCanvasElement | null = null;
@@ -50,7 +54,7 @@ function layoutOptions(): LayoutOptions {
   };
 }
 
-function figureInputs(player: SquadPlayer) {
+function avatarInputs(player: SquadPlayer): RenderInputs {
   const inputs = renderInputsFromAvatar(player.avatar!, { gender: player.gender });
   // Route the remote kit data through the worker's same-origin proxy. Face
   // parts (/Img/Avatar/…) are already same-origin via assetOrigin.
@@ -58,7 +62,7 @@ function figureInputs(player: SquadPlayer) {
   return inputs;
 }
 
-/** Renders every player's figure once into the cache. Expensive; run on load. */
+/** Renders every figure once into the cache. Expensive; run on load. */
 async function renderFigures(): Promise<void> {
   const status = el("status");
   const temp = document.createElement("div");
@@ -66,24 +70,23 @@ async function renderFigures(): Promise<void> {
   document.body.appendChild(temp);
 
   let done = 0;
-  for (const { player } of squad) {
-    if (!figureCache.has(player.id)) {
+  for (const item of squad) {
+    if (!figureCache.has(item.id)) {
       status.textContent = `Rendering ${done + 1}/${squad.length}`;
       const holder = document.createElement("div");
       temp.appendChild(holder);
       try {
-        if (!player.avatar) throw new Error("no avatar");
         figureCache.set(
-          player.id,
-          await renderInputs(figureInputs(player), holder, {
+          item.id,
+          await renderInputs(item.inputs, holder, {
             assetOrigin: location.origin + BASE,
             slimKitUrl: `${BASE}/Club/Players/Avatars/slimkitrender.js`,
             fullBodiesUrl: `${BASE}/Club/Players/Avatars/HT.FullBodies.js`,
           }),
         );
       } catch (err) {
-        console.error(`player ${player.id}`, err);
-        figureCache.set(player.id, null);
+        console.error(`figure ${item.id}`, err);
+        figureCache.set(item.id, null);
       }
     }
     done++;
@@ -95,7 +98,7 @@ async function renderFigures(): Promise<void> {
 /** Composes the enabled figures, in order, over the background. Instant. */
 function recompose(): void {
   const stage = el("stage");
-  const enabled = squad.filter((i) => i.enabled).map((i) => i.player);
+  const enabled = squad.filter((i) => i.enabled);
   if (enabled.length === 0) {
     composed = null;
     stage.replaceChildren();
@@ -107,8 +110,8 @@ function recompose(): void {
   // adjacent to the next, so nothing is squeezed and nothing overlaps.
   const rendered: RenderOutput[] = [];
   const widths: number[] = [];
-  for (const p of enabled) {
-    const c = figureCache.get(p.id);
+  for (const item of enabled) {
+    const c = figureCache.get(item.id);
     if (!c) continue;
     const { w, h } = naturalSize(c);
     rendered.push(c);
@@ -146,7 +149,7 @@ function renderSquadList(): void {
 
     const name = document.createElement("span");
     name.className = "name";
-    name.textContent = item.player.name || `#${item.player.number}`;
+    name.textContent = item.name;
 
     const up = document.createElement("button");
     up.type = "button";
@@ -167,16 +170,33 @@ function renderSquadList(): void {
   });
 }
 
+async function showSquad(label: string): Promise<void> {
+  figureCache.clear();
+  el("teamName").textContent = label;
+  renderSquadList();
+  await renderFigures();
+  recompose();
+}
+
 async function loadRoster(): Promise<void> {
   const res = await fetch(`${API_BASE}/api/squad`, { credentials: "include" });
   if (!res.ok) throw new Error(await res.text());
   const data = (await res.json()) as { teamName: string; players: SquadPlayer[] };
-  squad = data.players.map((player) => ({ player, enabled: true }));
-  figureCache.clear();
-  el("teamName").textContent = data.teamName;
-  renderSquadList();
-  await renderFigures();
-  recompose();
+  squad = data.players
+    .filter((p) => p.avatar)
+    .map((p) => ({ id: p.id, name: p.name || `#${p.number}`, enabled: true, inputs: avatarInputs(p) }));
+  await showSquad(data.teamName);
+}
+
+/** A randomly generated 22-player demo with the default kit (no connection). */
+async function loadDemo(): Promise<void> {
+  squad = Array.from({ length: 22 }, (_, i) => ({
+    id: i + 1,
+    name: `Player ${i + 1}`,
+    enabled: true,
+    inputs: randomRenderInputs(),
+  }));
+  await showSquad("demo");
 }
 
 // Layout controls only affect composition, so they recompose instantly.
@@ -226,7 +246,9 @@ async function init(): Promise<void> {
     auth.innerHTML =
       '<a href="' +
       `${API_BASE}/api/auth/login` +
-      '" style="display:block"><button type="button">Connect Hattrick</button></a>';
+      '" style="display:block"><button type="button">Connect Hattrick</button></a>' +
+      '<p class="demo-note">Not connected. Showing a random demo squad.</p>';
+    await loadDemo();
     return;
   }
 

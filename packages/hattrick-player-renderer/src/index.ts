@@ -5,3 +5,4 @@ export * from "./provider.js";
 export * from "./assets.js";
 export * from "./fullbody-tables.js";
 export * from "./from-avatars.js";
+export * from "./random-avatar.js";
