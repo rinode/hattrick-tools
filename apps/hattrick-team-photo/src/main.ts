@@ -69,10 +69,22 @@ async function renderFigures(): Promise<void> {
   temp.style.cssText = "position:absolute;left:-9999px;top:0";
   document.body.appendChild(temp);
 
+  // Spinner + count in the stage so progress is visible where the photo lands.
+  const stage = el("stage");
+  const loader = document.createElement("div");
+  loader.className = "loader";
+  const spinner = document.createElement("div");
+  spinner.className = "spinner";
+  const count = document.createElement("div");
+  count.className = "loader-count";
+  loader.append(spinner, count);
+  stage.replaceChildren(loader);
+
   let done = 0;
   for (const item of squad) {
+    count.textContent = `${done + 1}/${squad.length}`;
+    status.textContent = `Rendering ${done + 1}/${squad.length}`;
     if (!figureCache.has(item.id)) {
-      status.textContent = `Rendering ${done + 1}/${squad.length}`;
       const holder = document.createElement("div");
       temp.appendChild(holder);
       try {
