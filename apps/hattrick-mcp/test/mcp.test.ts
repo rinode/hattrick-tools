@@ -3,10 +3,12 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import type { FetchLike } from "hattrick-chpp-node";
 import { buildServer } from "../src/server.js";
+import { Account } from "../src/account.js";
 import { humanizeEconomy, humanizePlayer } from "../src/humanize.js";
 import { TtlCache } from "../src/cache.js";
 
-const CREDS = { consumerKey: "ck", consumerSecret: "cs", accessToken: "at", accessSecret: "as" };
+const account = (fetchImpl: FetchLike) =>
+  new Account("ck", "cs", { token: { accessToken: "at", accessSecret: "as" }, fetchImpl });
 
 const PLAYERS_XML = `<HattrickData><FileName>players.xml</FileName>
   <Team><TeamID>3486754</TeamID><TeamName>Op Buuren</TeamName><PlayerList>
@@ -42,6 +44,7 @@ describe("humanize", () => {
       specialtyId: 1,
       transferListed: false,
       countryId: 0,
+      gender: 1,
       cards: 0,
       injuryLevel: 0,
       staminaSkill: 0,
@@ -98,31 +101,64 @@ describe("TtlCache", () => {
 });
 
 describe("MCP server (in-memory client)", () => {
-  it("registers the read tools and serves get_players", async () => {
-    const server = buildServer(CREDS, { fetchImpl: fetchPlayers });
+  it("registers the full tool set and serves get_players", async () => {
+    const server = buildServer(account(fetchPlayers));
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
     await server.connect(serverTransport);
     const client = new Client({ name: "test", version: "0" });
     await client.connect(clientTransport);
 
-    const tools = await client.listTools();
-    expect(tools.tools.map((t) => t.name).sort()).toEqual([
-      "get_avatars",
-      "get_economy",
-      "get_ladder_details",
-      "get_ladders",
-      "get_matches",
-      "get_players",
+    const names = (await client.listTools()).tools.map((t) => t.name);
+    // Full replication of the Go MCP: many tools, incl. login and writes.
+    expect(names.length).toBeGreaterThan(60);
+    for (const t of [
+      "login",
+      "complete_login",
+      "get_manager",
       "get_team",
-      "get_training",
-      "search_transfers",
-    ]);
+      "get_players",
+      "get_match",
+      "get_youth_players",
+      "get_national_team",
+      "get_tournament",
+      "set_lineup",
+      "set_match_orders",
+      "place_bid",
+      "challenge",
+      "add_live_match",
+    ]) {
+      expect(names).toContain(t);
+    }
 
     const res = await client.callTool({ name: "get_players", arguments: {} });
     const content = res.content as Array<{ type: string; text: string }>;
     const payload = JSON.parse(content[0]!.text) as { teamName: string; players: unknown[] };
     expect(payload.teamName).toBe("Op Buuren");
     expect((payload.players[0] as { salary: string }).salary).toBe("€13,000");
+
+    await client.close();
+    await server.close();
+  });
+
+  it("gates write tools behind confirm:true (no CHPP call without it)", async () => {
+    let calls = 0;
+    const fetchCounting: FetchLike = async () => {
+      calls++;
+      return { ok: true, status: 200, text: async () => "<HattrickData><FileName>training.xml</FileName></HattrickData>" };
+    };
+    const server = buildServer(account(fetchCounting));
+    const [ct, st] = InMemoryTransport.createLinkedPair();
+    await server.connect(st);
+    const client = new Client({ name: "test", version: "0" });
+    await client.connect(ct);
+
+    const res = await client.callTool({
+      name: "set_training",
+      arguments: { team_id: 1, training_type: 8, level: 100, stamina_level: 10 },
+    });
+    const content = res.content as Array<{ type: string; text: string }>;
+    expect(content[0]!.text).toContain("Not applied");
+    expect(calls).toBe(0); // nothing sent to CHPP
 
     await client.close();
     await server.close();

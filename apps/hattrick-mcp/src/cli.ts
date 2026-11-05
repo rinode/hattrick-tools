@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { loadCredentials } from "./config.js";
+import { loadAccount } from "./config.js";
 import { buildServer } from "./server.js";
 import { startHttp } from "./http.js";
 
@@ -14,21 +14,28 @@ async function main(): Promise<void> {
     return;
   }
 
-  const creds = loadCredentials();
+  if (cmd === "login") {
+    const { runLogin } = await import("hattrick-chpp-node/node");
+    const path = await runLogin();
+    process.stdout.write(`\nSaved access token to ${path}\n`);
+    return;
+  }
+
+  const account = loadAccount();
 
   if (cmd === "serve") {
     // stdout carries the MCP protocol; logs go to stderr.
-    const server = buildServer(creds, { version: VERSION });
+    const server = buildServer(account, { version: VERSION });
     await server.connect(new StdioServerTransport());
     return;
   }
 
   if (cmd === "http") {
-    await startHttp(() => buildServer(creds, { version: VERSION }));
+    await startHttp(() => buildServer(account, { version: VERSION }));
     return;
   }
 
-  throw new Error(`unknown command ${JSON.stringify(cmd)} (use serve, http or version)`);
+  throw new Error(`unknown command ${JSON.stringify(cmd)} (use serve, http, login or version)`);
 }
 
 main().catch((err) => {

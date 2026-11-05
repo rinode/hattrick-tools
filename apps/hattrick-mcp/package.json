@@ -15,7 +15,8 @@
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "start": "node dist/cli.js"
+    "start": "node dist/cli.js",
+    "login": "node dist/cli.js login"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.0",

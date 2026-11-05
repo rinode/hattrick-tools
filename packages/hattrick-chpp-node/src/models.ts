@@ -42,6 +42,8 @@ export interface Player {
   specialtyId: number;
   transferListed: boolean;
   countryId: number;
+  /** GenderID: 1 male, 2 female (players.xml 2.8+). */
+  gender: number;
   cards: number;
   injuryLevel: number;
   staminaSkill: number;
@@ -68,6 +70,8 @@ export interface TeamSummary {
   name: string;
   shortName: string;
   isPrimaryClub: boolean;
+  /** LeagueSystemID: the country's league system (teamdetails 3.9+). */
+  leagueSystemId: number;
 }
 
 /** teamdetails: the owning user plus their team(s). */
@@ -214,6 +218,7 @@ export interface TransferSearchQuery {
   skillId: number;
   skillMin: number;
   skillMax: number;
+  priceMinSek?: number;
   priceMaxSek?: number;
   pageIndex?: number;
 }

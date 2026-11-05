@@ -37,6 +37,7 @@ export function humanizePlayer(p: Player): Record<string, unknown> {
     experience: skill(p.experience),
     leadership: skill(p.leadership),
     specialty: specialtyName(p.specialtyId),
+    gender: p.gender === 2 ? "female" : p.gender === 1 ? "male" : undefined,
     salary: p.salarySek ? formatSekAsEur(p.salarySek) : undefined,
     tsi: p.tsi,
     keeper: skill(p.keeperSkill),
@@ -194,4 +195,25 @@ export function humanizeTransfers(res: TransferSearchResults): Record<string, un
       }),
     ),
   };
+}
+
+/**
+ * Drops empty strings, nulls, empty arrays and empty objects (recursively) so
+ * JSON results stay compact, while keeping numeric zeros and false — a 0-0
+ * score or 0 points is real information. Mirrors the Go MCP's plain().
+ */
+export function plain(v: unknown): unknown {
+  if (Array.isArray(v)) return v.map(plain);
+  if (v && typeof v === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [k, val] of Object.entries(v as Record<string, unknown>)) {
+      if (val === "" || val === null || val === undefined) continue;
+      if (Array.isArray(val) && val.length === 0) continue;
+      const pv = plain(val);
+      if (pv && typeof pv === "object" && !Array.isArray(pv) && Object.keys(pv).length === 0) continue;
+      out[k] = pv;
+    }
+    return out;
+  }
+  return v;
 }
