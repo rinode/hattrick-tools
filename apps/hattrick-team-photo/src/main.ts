@@ -6,7 +6,7 @@ import {
   type PlayerAvatar,
   type RenderOutput,
 } from "hattrick-player-renderer";
-import { composeTeamPhoto } from "./compose.js";
+import { composeTeamPhoto, naturalSize } from "./compose.js";
 import { computeLayout, DEFAULT_LAYOUT, type LayoutOptions } from "./layout.js";
 
 function el<T extends HTMLElement>(id: string): T {
@@ -104,6 +104,15 @@ function recompose(): void {
   }
   const canvases = enabled.map((p) => figureCache.get(p.id) ?? null);
   const opts = layoutOptions();
+  // Size every slot to the widest rendered figure (at the common height) so no
+  // two figures overlap and the stagger shift is a true half-width.
+  let maxW = 0;
+  for (const c of canvases) {
+    if (!c) continue;
+    const { w, h } = naturalSize(c);
+    if (w > 0 && h > 0) maxW = Math.max(maxW, w * (opts.figureHeight / h));
+  }
+  if (maxW > 0) opts.figureWidth = Math.ceil(maxW);
   composed = composeTeamPhoto(canvases, computeLayout(enabled.length, opts), opts, background);
   composed.style.maxWidth = "100%";
   stage.replaceChildren(composed);

@@ -1,7 +1,7 @@
 import type { RenderOutput } from "hattrick-player-renderer";
 import type { Layout, LayoutOptions } from "./layout.js";
 
-function naturalSize(c: RenderOutput): { w: number; h: number } {
+export function naturalSize(c: RenderOutput): { w: number; h: number } {
   return c instanceof HTMLCanvasElement
     ? { w: c.width, h: c.height }
     : { w: c.naturalWidth, h: c.naturalHeight };
