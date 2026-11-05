@@ -20,6 +20,8 @@ export interface Placement {
   col: number;
   x: number;
   y: number;
+  /** Width this figure is drawn at (figures are packed adjacent by width). */
+  w: number;
 }
 
 export interface Layout {
@@ -58,31 +60,43 @@ function distribute(count: number, rows: number, maxPerRow: number): number[] {
  * row first (row 0 is highest/furthest back). Pure — no DOM — so it's unit
  * tested; the compositor just paints each figure at the returned (x, y).
  */
-export function computeLayout(count: number, opts: LayoutOptions = DEFAULT_LAYOUT): Layout {
+export function computeLayout(
+  countOrWidths: number | number[],
+  opts: LayoutOptions = DEFAULT_LAYOUT,
+): Layout {
+  // A plain count lays figures out at the uniform figure width; an array of
+  // per-figure widths packs each figure at its own width, adjacent to the next.
+  const widths =
+    typeof countOrWidths === "number"
+      ? (Array(Math.max(0, countOrWidths)).fill(opts.figureWidth) as number[])
+      : countOrWidths;
+  const count = widths.length;
   if (count <= 0) return { width: 0, height: 0, rowCounts: [], placements: [] };
 
   const rowCounts = distribute(count, opts.rows, opts.maxPerRow);
-  const stride = opts.figureWidth + opts.gapX;
-  const staggerShift = opts.stagger ? opts.figureWidth / 2 : 0;
+  const avgW = widths.reduce((a, b) => a + b, 0) / count;
+  const staggerShift = opts.stagger ? avgW / 2 : 0;
 
-  const rowWidth = (n: number) => n * opts.figureWidth + (n - 1) * opts.gapX;
+  // Split the widths into rows following rowCounts.
+  const rowWidths: number[][] = [];
+  let cursor = 0;
+  for (const n of rowCounts) {
+    rowWidths.push(widths.slice(cursor, cursor + n));
+    cursor += n;
+  }
+  const rowSpan = (ws: number[]) => ws.reduce((a, b) => a + b, 0) + Math.max(0, ws.length - 1) * opts.gapX;
   const totalWidth =
-    Math.max(...rowCounts.map((n, r) => rowWidth(n) + (r % 2 ? staggerShift : 0))) || 0;
+    Math.max(...rowWidths.map((ws, r) => rowSpan(ws) + (r % 2 ? staggerShift : 0))) || 0;
 
   const placements: Placement[] = [];
   let index = 0;
-  rowCounts.forEach((n, row) => {
+  rowWidths.forEach((ws, row) => {
     const offset = row % 2 ? staggerShift : 0;
-    const startX = (totalWidth - rowWidth(n) - offset) / 2 + offset;
-    for (let col = 0; col < n; col++) {
-      placements.push({
-        index: index++,
-        row,
-        col,
-        x: Math.round(startX + col * stride),
-        y: row * opts.rowRise,
-      });
-    }
+    let x = (totalWidth - rowSpan(ws) - offset) / 2 + offset;
+    ws.forEach((w, col) => {
+      placements.push({ index: index++, row, col, x: Math.round(x), y: row * opts.rowRise, w });
+      x += w + opts.gapX;
+    });
   });
 
   const height = (rowCounts.length - 1) * opts.rowRise + opts.figureHeight;

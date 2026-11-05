@@ -38,16 +38,7 @@ export function composeTeamPhoto(
 
   for (const p of layout.placements) {
     const canvas = canvases[p.index];
-    if (!canvas) continue;
-    const { w: natW, h: natH } = naturalSize(canvas);
-    if (natW > 0 && natH > 0) {
-      // Uniform scale to the slot height; keep aspect; center within the slot.
-      const scale = opts.figureHeight / natH;
-      const w = natW * scale;
-      ctx.drawImage(canvas, p.x + (opts.figureWidth - w) / 2, p.y, w, opts.figureHeight);
-    } else {
-      ctx.drawImage(canvas, p.x, p.y, opts.figureWidth, opts.figureHeight);
-    }
+    if (canvas) ctx.drawImage(canvas, p.x, p.y, p.w, opts.figureHeight);
   }
   return out;
 }

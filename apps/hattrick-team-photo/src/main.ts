@@ -102,21 +102,22 @@ function recompose(): void {
     el("status").textContent = "No players selected.";
     return;
   }
-  const canvases = enabled.map((p) => figureCache.get(p.id) ?? null);
   const opts = layoutOptions();
-  // Size every slot to the widest rendered figure (at the common height) so no
-  // two figures overlap and the stagger shift is a true half-width.
-  let maxW = 0;
-  for (const c of canvases) {
+  // Each figure keeps its own width (scaled to the common height) and packs
+  // adjacent to the next, so nothing is squeezed and nothing overlaps.
+  const rendered: RenderOutput[] = [];
+  const widths: number[] = [];
+  for (const p of enabled) {
+    const c = figureCache.get(p.id);
     if (!c) continue;
     const { w, h } = naturalSize(c);
-    if (w > 0 && h > 0) maxW = Math.max(maxW, w * (opts.figureHeight / h));
+    rendered.push(c);
+    widths.push(h > 0 ? w * (opts.figureHeight / h) : opts.figureWidth);
   }
-  if (maxW > 0) opts.figureWidth = Math.ceil(maxW);
-  composed = composeTeamPhoto(canvases, computeLayout(enabled.length, opts), opts, background);
+  composed = composeTeamPhoto(rendered, computeLayout(widths, opts), opts, background);
   composed.style.maxWidth = "100%";
   stage.replaceChildren(composed);
-  el("status").textContent = `${canvases.filter(Boolean).length}/${enabled.length} rendered.`;
+  el("status").textContent = `${rendered.length}/${enabled.length} rendered.`;
 }
 
 function move(index: number, delta: number): void {
