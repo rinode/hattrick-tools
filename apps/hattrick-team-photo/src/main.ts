@@ -8,7 +8,7 @@ import {
   type RenderInputs,
   type RenderOutput,
 } from "hattrick-player-renderer";
-import { composeTeamPhoto, naturalSize } from "./compose.js";
+import { composeTeamPhoto, naturalSize, type PhotoMeta } from "./compose.js";
 import { computeLayout, DEFAULT_LAYOUT, type LayoutOptions } from "./layout.js";
 
 function el<T extends HTMLElement>(id: string): T {
@@ -27,6 +27,7 @@ interface SquadPlayer {
 
 interface SquadItem {
   id: number;
+  number: number;
   name: string;
   enabled: boolean;
   inputs: RenderInputs;
@@ -43,15 +44,20 @@ let squad: SquadItem[] = [];
 // background changes only recompose, which is instant.
 const figureCache = new Map<number, RenderOutput | null>();
 let background: HTMLImageElement | null = null;
+let crest: HTMLImageElement | null = null;
+let teamName = "";
 let composed: HTMLCanvasElement | null = null;
 
 function layoutOptions(): LayoutOptions {
   return {
     ...DEFAULT_LAYOUT,
     rows: Number(el<HTMLInputElement>("rows").value),
-    maxPerRow: Number(el<HTMLInputElement>("maxPerRow").value),
     stagger: el<HTMLInputElement>("stagger").checked,
   };
+}
+
+function checked(id: string): boolean {
+  return el<HTMLInputElement>(id).checked;
 }
 
 function avatarInputs(player: SquadPlayer): RenderInputs {
@@ -129,7 +135,12 @@ function recompose(): void {
     rendered.push(c);
     widths.push(h > 0 ? w * (opts.figureHeight / h) : opts.figureWidth);
   }
-  composed = composeTeamPhoto(rendered, computeLayout(widths, opts), opts, background);
+  const meta: PhotoMeta = {
+    teamName: checked("showName") ? teamName : undefined,
+    crest: checked("showCrest") ? crest : null,
+    members: checked("showNames") ? enabled.map((i) => ({ number: i.number, name: i.name })) : [],
+  };
+  composed = composeTeamPhoto(rendered, computeLayout(widths, opts), opts, background, meta);
   composed.style.maxWidth = "100%";
   stage.replaceChildren(composed);
   el("status").textContent = `${rendered.length}/${enabled.length} rendered.`;
@@ -161,7 +172,7 @@ function renderSquadList(): void {
 
     const name = document.createElement("span");
     name.className = "name";
-    name.textContent = item.name;
+    name.textContent = `${item.number}. ${item.name}`;
 
     const up = document.createElement("button");
     up.type = "button";
@@ -190,14 +201,36 @@ async function showSquad(label: string): Promise<void> {
   recompose();
 }
 
+function loadImage(src: string | null): Promise<HTMLImageElement | null> {
+  if (!src) return Promise.resolve(null);
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
+}
+
 async function loadRoster(teamId?: number): Promise<void> {
   const url = `${API_BASE}/api/squad${teamId ? `?teamId=${teamId}` : ""}`;
   const res = await fetch(url, { credentials: "include" });
   if (!res.ok) throw new Error(await res.text());
-  const data = (await res.json()) as { teamName: string; players: SquadPlayer[] };
+  const data = (await res.json()) as {
+    teamName: string;
+    crest: string | null;
+    players: SquadPlayer[];
+  };
   squad = data.players
     .filter((p) => p.avatar)
-    .map((p) => ({ id: p.id, name: p.name || `#${p.number}`, enabled: true, inputs: avatarInputs(p) }));
+    .map((p) => ({
+      id: p.id,
+      number: p.number,
+      name: p.name || `#${p.number}`,
+      enabled: true,
+      inputs: avatarInputs(p),
+    }));
+  teamName = data.teamName;
+  crest = await loadImage(data.crest);
   await showSquad(data.teamName);
 }
 
@@ -231,16 +264,20 @@ async function loadTeams(): Promise<void> {
 async function loadDemo(): Promise<void> {
   squad = Array.from({ length: 22 }, (_, i) => ({
     id: i + 1,
+    number: i + 1,
     name: `Player ${i + 1}`,
     enabled: true,
     inputs: randomRenderInputs(),
   }));
+  teamName = "Demo FC";
+  crest = null;
   await showSquad("demo");
 }
 
-// Layout controls only affect composition, so they recompose instantly.
-for (const id of ["rows", "maxPerRow", "stagger"]) {
-  el<HTMLInputElement>(id).addEventListener("input", () => recompose());
+// Layout and label controls only affect composition, so they recompose instantly.
+for (const id of ["rows", "stagger", "showName", "showCrest", "showNames"]) {
+  const ev = id === "rows" ? "input" : "change";
+  el<HTMLInputElement>(id).addEventListener(ev, () => recompose());
 }
 
 el<HTMLInputElement>("bgFile").addEventListener("change", (event) => {

@@ -1654,6 +1654,7 @@ export function mapTeamDetails(root: HattrickData): TeamDetails {
       shortName: str(t["ShortTeamName"]),
       isPrimaryClub: bool(t["IsPrimaryClub"]),
       leagueSystemId: num(t["LeagueSystemID"]),
+      logoUrl: str(t["LogoURL"]),
     })),
   };
 }

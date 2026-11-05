@@ -7,7 +7,7 @@ const TEAMDETAILS_XML = `<HattrickData>
   <FileName>teamdetails.xml</FileName>
   <User><UserID>42</UserID><Loginname>marino</Loginname></User>
   <Teams>
-    <Team><TeamID>3486754</TeamID><TeamName>Op Buuren</TeamName><ShortTeamName>OB</ShortTeamName><IsPrimaryClub>True</IsPrimaryClub><LeagueSystemID>1</LeagueSystemID></Team>
+    <Team><TeamID>3486754</TeamID><TeamName>Op Buuren</TeamName><ShortTeamName>OB</ShortTeamName><IsPrimaryClub>True</IsPrimaryClub><LeagueSystemID>1</LeagueSystemID><LogoURL>//res.hattrick.org/teamlogo/x.webp</LogoURL></Team>
   </Teams>
 </HattrickData>`;
 
@@ -40,6 +40,7 @@ describe("mapTeamDetails", () => {
       shortName: "OB",
       isPrimaryClub: true,
       leagueSystemId: 1,
+      logoUrl: "//res.hattrick.org/teamlogo/x.webp",
     });
   });
 });

@@ -85,6 +85,25 @@ app.post(`${BASE}/api/auth/logout`, (c) => {
   return c.json({ ok: true });
 });
 
+// Fetches a Hattrick image and inlines it as a data URL, so the browser draws
+// it same-origin (no canvas tainting on export) without a dedicated proxy route.
+async function fetchDataUrl(url: string): Promise<string | null> {
+  const abs = url.startsWith("//") ? "https:" + url : url;
+  try {
+    const r = await fetch(abs, {
+      headers: { "User-Agent": "hattrick-tools (+https://hattrick-tools.org)" },
+    });
+    if (!r.ok) return null;
+    const ct = r.headers.get("content-type") ?? "image/png";
+    const bytes = new Uint8Array(await r.arrayBuffer());
+    let bin = "";
+    for (const b of bytes) bin += String.fromCharCode(b);
+    return `data:${ct};base64,${btoa(bin)}`;
+  } catch {
+    return null;
+  }
+}
+
 function clientFor(c: { env: Env }, sess: AccessToken): HattrickClient {
   return new HattrickClient({
     consumerKey: c.env.HATTRICK_CONSUMER_KEY,
@@ -117,14 +136,20 @@ app.get(`${BASE}/api/squad`, async (c) => {
   const client = clientFor(c, sess);
   const teamId = Number(c.req.query("teamId")) || 0;
   try {
-    const [team, avatars] = await Promise.all([
+    const [team, avatars, details] = await Promise.all([
       teamId ? client.getPlayers(teamId) : client.getMyPlayers(),
       teamId ? client.getAvatars(teamId) : client.getMyAvatars(),
+      client.getMyTeamDetails(),
     ]);
     const byId = new Map(avatars.map((a) => [a.playerId, a.avatar]));
+    const summary =
+      details.teams.find((t) => t.id === team.teamId) ??
+      details.teams.find((t) => t.isPrimaryClub);
+    const crest = summary?.logoUrl ? await fetchDataUrl(summary.logoUrl) : null;
     return c.json({
       teamId: team.teamId,
       teamName: team.teamName,
+      crest,
       players: team.players.map((p) => ({
         id: p.id,
         name: [p.firstName, p.nickName, p.lastName].filter(Boolean).join(" "),

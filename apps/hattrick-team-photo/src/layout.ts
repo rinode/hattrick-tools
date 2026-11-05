@@ -1,9 +1,7 @@
 /** Options for arranging figures into staggered team-photo rows. */
 export interface LayoutOptions {
-  /** Desired number of rows (expanded if maxPerRow forces more). */
+  /** Number of rows to spread the figures across. */
   rows: number;
-  /** Maximum figures per row. */
-  maxPerRow: number;
   figureWidth: number;
   figureHeight: number;
   /** Horizontal gap between figures in a row. */
@@ -33,7 +31,6 @@ export interface Layout {
 
 export const DEFAULT_LAYOUT: LayoutOptions = {
   rows: 3,
-  maxPerRow: 6,
   figureWidth: 111,
   figureHeight: 409,
   gapX: 8,
@@ -41,10 +38,9 @@ export const DEFAULT_LAYOUT: LayoutOptions = {
   stagger: true,
 };
 
-/** Distributes `count` figures across rows as evenly as possible. */
-function distribute(count: number, rows: number, maxPerRow: number): number[] {
-  const needed = Math.max(1, Math.ceil(count / Math.max(1, maxPerRow)));
-  const r = Math.min(Math.max(rows, needed), Math.max(1, count));
+/** Distributes `count` figures across `rows` rows as evenly as possible. */
+function distribute(count: number, rows: number): number[] {
+  const r = Math.min(Math.max(1, rows), Math.max(1, count));
   const base = Math.floor(count / r);
   let rem = count % r;
   const counts: number[] = [];
@@ -73,7 +69,7 @@ export function computeLayout(
   const count = widths.length;
   if (count <= 0) return { width: 0, height: 0, rowCounts: [], placements: [] };
 
-  const rowCounts = distribute(count, opts.rows, opts.maxPerRow);
+  const rowCounts = distribute(count, opts.rows);
   const avgW = widths.reduce((a, b) => a + b, 0) / count;
   const staggerShift = opts.stagger ? avgW / 2 : 0;
 

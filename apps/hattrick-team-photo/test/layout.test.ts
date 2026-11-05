@@ -7,16 +7,15 @@ describe("computeLayout", () => {
   });
 
   it("distributes evenly across the requested rows", () => {
-    const l = computeLayout(11, { ...DEFAULT_LAYOUT, rows: 3, maxPerRow: 6 });
+    const l = computeLayout(11, { ...DEFAULT_LAYOUT, rows: 3 });
     expect(l.rowCounts).toEqual([4, 4, 3]);
     expect(l.placements).toHaveLength(11);
     expect(l.rowCounts.reduce((a, b) => a + b, 0)).toBe(11);
   });
 
-  it("adds rows when maxPerRow would be exceeded", () => {
-    const l = computeLayout(20, { ...DEFAULT_LAYOUT, rows: 2, maxPerRow: 6 });
-    expect(l.rowCounts).toHaveLength(4); // ceil(20/6) = 4 > 2
-    expect(Math.max(...l.rowCounts)).toBeLessThanOrEqual(6);
+  it("uses exactly the requested number of rows", () => {
+    const l = computeLayout(20, { ...DEFAULT_LAYOUT, rows: 3 });
+    expect(l.rowCounts).toEqual([7, 7, 6]);
     expect(l.rowCounts.reduce((a, b) => a + b, 0)).toBe(20);
   });
 
@@ -33,7 +32,7 @@ describe("computeLayout", () => {
   });
 
   it("staggers alternate rows horizontally", () => {
-    const l = computeLayout(12, { ...DEFAULT_LAYOUT, rows: 2, maxPerRow: 6, stagger: true });
+    const l = computeLayout(12, { ...DEFAULT_LAYOUT, rows: 2, stagger: true });
     const row0First = l.placements.find((p) => p.row === 0 && p.col === 0)!;
     const row1First = l.placements.find((p) => p.row === 1 && p.col === 0)!;
     expect(row0First.x).not.toBe(row1First.x);

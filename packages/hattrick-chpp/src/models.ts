@@ -72,6 +72,8 @@ export interface TeamSummary {
   isPrimaryClub: boolean;
   /** LeagueSystemID: the country's league system (teamdetails 3.9+). */
   leagueSystemId: number;
+  /** Team crest/logo URL (protocol-relative in the API). */
+  logoUrl: string;
 }
 
 /** teamdetails: the owning user plus their team(s). */
