@@ -131,17 +131,19 @@ function recompose(): void {
   // adjacent to the next, so nothing is squeezed and nothing overlaps.
   const rendered: RenderOutput[] = [];
   const widths: number[] = [];
+  const members: { number: number; name: string }[] = [];
   for (const item of enabled) {
     const c = figureCache.get(item.id);
     if (!c) continue;
     const { w, h } = naturalSize(c);
     rendered.push(c);
     widths.push(h > 0 ? w * (opts.figureHeight / h) : opts.figureWidth);
+    members.push({ number: item.number, name: item.name });
   }
   const meta: PhotoMeta = {
     teamName: checked("showName") ? teamName : undefined,
     crest: checked("showCrest") ? crest : null,
-    members: checked("showNames") ? enabled.map((i) => ({ number: i.number, name: i.name })) : [],
+    members: checked("showNames") ? members : [],
   };
   composed = composeTeamPhoto(rendered, computeLayout(widths, opts), opts, background, meta);
   composed.style.maxWidth = "100%";

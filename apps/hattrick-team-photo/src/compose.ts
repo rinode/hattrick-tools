@@ -12,30 +12,33 @@ export interface PhotoMeta {
   teamName?: string;
   /** Team crest drawn against the right edge of the header (null to hide). */
   crest?: HTMLImageElement | null;
-  /** Squad members listed under the photo (empty to hide). */
+  /** Squad members, in figure order, listed under the photo row by row. */
   members?: { number: number; name: string }[];
 }
 
 const SIDE = 24;
 const HEADER_H = 76;
-const LINE_H = 24;
-const FOOTER_PAD = 20;
+const LINE_H = 26;
+const FOOTER_PAD = 18;
+const NAME_GAP = 28;
 const MIN_WIDTH = 560;
-const INK = "#1b2420";
 
-function withHalo(ctx: CanvasRenderingContext2D, draw: () => void): void {
+// All text is white with a black drop shadow so it reads over any background.
+function withShadow(ctx: CanvasRenderingContext2D, draw: () => void): void {
   ctx.save();
-  ctx.shadowColor = "rgba(255,255,255,0.85)";
-  ctx.shadowBlur = 4;
-  ctx.fillStyle = INK;
+  ctx.shadowColor = "rgba(0,0,0,0.85)";
+  ctx.shadowBlur = 3;
+  ctx.shadowOffsetX = 1;
+  ctx.shadowOffsetY = 1;
+  ctx.fillStyle = "#ffffff";
   draw();
   ctx.restore();
 }
 
 /**
  * Paints the photo: an optional header (team name + crest), the figures, and an
- * optional footer listing the squad. Figures scale to a common height and pack
- * adjacent; the canvas grows to fit whatever header/footer are shown.
+ * optional footer listing the squad row by row (each figure row's names on one
+ * centered line). Figures scale to a common height and pack adjacent.
  */
 export function composeTeamPhoto(
   canvases: Array<RenderOutput | null>,
@@ -47,11 +50,10 @@ export function composeTeamPhoto(
   const hasCrest = Boolean(meta.crest && meta.crest.naturalWidth > 0);
   const hasHeader = Boolean((meta.teamName && meta.teamName.trim()) || hasCrest);
   const members = meta.members ?? [];
-  const cols = members.length ? Math.min(4, Math.ceil(members.length / 11)) : 0;
-  const perCol = cols ? Math.ceil(members.length / cols) : 0;
 
   const headerH = hasHeader ? HEADER_H : 0;
-  const footerH = members.length ? FOOTER_PAD * 2 + perCol * LINE_H : 0;
+  const footerRows = members.length ? layout.rowCounts.length : 0;
+  const footerH = footerRows ? FOOTER_PAD * 2 + footerRows * LINE_H : 0;
   const width = Math.max(layout.width, MIN_WIDTH);
 
   const out = document.createElement("canvas");
@@ -73,7 +75,7 @@ export function composeTeamPhoto(
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.font = '700 34px "Roboto", Verdana, sans-serif';
-      withHalo(ctx, () => ctx.fillText(meta.teamName!.trim(), out.width / 2, headerH / 2));
+      withShadow(ctx, () => ctx.fillText(meta.teamName!.trim(), out.width / 2, headerH / 2));
     }
     if (hasCrest) {
       const crest = meta.crest!;
@@ -90,19 +92,24 @@ export function composeTeamPhoto(
     if (canvas) ctx.drawImage(canvas, p.x + offsetX, p.y + headerH, p.w, opts.figureHeight);
   }
 
-  // Footer: numbered squad list in columns.
-  if (members.length) {
+  // Footer: one centered line of names per figure row, same grouping as above.
+  if (footerRows) {
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
     ctx.font = '500 15px "Roboto", Verdana, sans-serif';
     const top = headerH + layout.height + FOOTER_PAD;
-    const colW = out.width / cols;
-    members.forEach((m, i) => {
-      const col = Math.floor(i / perCol);
-      const rowInCol = i % perCol;
-      const x = col * colW + SIDE;
-      const y = top + rowInCol * LINE_H + LINE_H / 2;
-      withHalo(ctx, () => ctx.fillText(`${m.number}. ${m.name}`, x, y));
+    let idx = 0;
+    layout.rowCounts.forEach((n, row) => {
+      const tokens = members.slice(idx, idx + n).map((m) => `${m.number}. ${m.name}`);
+      idx += n;
+      const widths = tokens.map((t) => ctx.measureText(t).width);
+      const total = widths.reduce((a, b) => a + b, 0) + NAME_GAP * Math.max(0, tokens.length - 1);
+      const y = top + row * LINE_H + LINE_H / 2;
+      let x = (out.width - total) / 2;
+      tokens.forEach((t, i) => {
+        withShadow(ctx, () => ctx.fillText(t, x, y));
+        x += widths[i]! + NAME_GAP;
+      });
     });
   }
 
