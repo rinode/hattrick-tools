@@ -120,10 +120,12 @@ app.get(`${BASE}/api/squad`, async (c) => {
 // keeps the export canvas untainted and avoids vendoring per-player PNGs. Only
 // these two upstream origins and prefixes are proxied (not an open proxy).
 async function proxyAsset(upstream: string): Promise<Response> {
+  // Identify the client honestly. Some CDNs 403 a fetch with no User-Agent.
   const r = await fetch(upstream, {
+    headers: { "User-Agent": "hattrick-tools (+https://hattrick-tools.org)" },
     cf: { cacheTtl: 86400, cacheEverything: true },
   } as RequestInit);
-  if (!r.ok) return new Response("upstream asset error", { status: r.status });
+  if (!r.ok) return new Response(`upstream asset error ${r.status}`, { status: r.status });
   const headers = new Headers();
   const ct = r.headers.get("content-type");
   if (ct) headers.set("content-type", ct);
