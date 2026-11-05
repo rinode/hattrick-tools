@@ -67,6 +67,10 @@ async function generate(): Promise<void> {
       if (!player.avatar) throw new Error("no avatar");
       // Full-body inputs straight from the CHPP avatar — no page scrape.
       const inputs = renderInputsFromAvatar(player.avatar, { gender: player.gender });
+      // Route the remote kit data through the worker's same-origin proxy, so the
+      // fetch isn't cross-origin. Face parts (/Img/Avatar/…) are already
+      // same-origin via assetOrigin + the worker's /Img/Avatar proxy.
+      inputs.kitJson = inputs.kitJson.replace(/^(?:https?:)?\/\/res\.hattrick\.org\//, "/_kit/");
       canvases.push(
         await renderInputs(inputs, holder, {
           assetOrigin: location.origin + BASE,

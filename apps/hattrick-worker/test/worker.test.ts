@@ -73,3 +73,39 @@ describe("worker routing", () => {
     expect(res.status).toBe(404);
   });
 });
+
+describe("worker asset proxy", () => {
+  it("proxies face parts to www.hattrick.org same-origin", async () => {
+    const orig = globalThis.fetch;
+    let seen = "";
+    globalThis.fetch = (async (u: string) => {
+      seen = String(u);
+      return new Response("PNGDATA", { headers: { "content-type": "image/png" } });
+    }) as typeof fetch;
+    try {
+      const res = await app.request("/team-photo/Img/Avatar/faces/f9a.png", {}, env);
+      expect(seen).toBe("https://www.hattrick.org/Img/Avatar/faces/f9a.png");
+      expect(res.status).toBe(200);
+      expect(res.headers.get("content-type")).toBe("image/png");
+      expect(await res.text()).toBe("PNGDATA");
+    } finally {
+      globalThis.fetch = orig;
+    }
+  });
+
+  it("proxies kit data to res.hattrick.org, stripping the /_kit prefix", async () => {
+    const orig = globalThis.fetch;
+    let seen = "";
+    globalThis.fetch = (async (u: string) => {
+      seen = String(u);
+      return new Response("{}", { headers: { "content-type": "application/json" } });
+    }) as typeof fetch;
+    try {
+      const res = await app.request("/team-photo/_kit/kits/35/342/3420/3419013/kitData.json", {}, env);
+      expect(seen).toBe("https://res.hattrick.org/kits/35/342/3420/3419013/kitData.json");
+      expect(res.status).toBe(200);
+    } finally {
+      globalThis.fetch = orig;
+    }
+  });
+});

@@ -66,14 +66,16 @@ export function renderInputsFromAvatar(
   const assetsPath = opts.assetsPath ?? FULLBODY_ASSETS_PATH;
   const layers = avatar.layers ?? [];
 
-  // Head-overlay parts, in layer order, with "/Img/Avatar/" stripped from the
-  // url (exactly the relative form the page's HT.FullBodies.init uses).
+  // Head-overlay parts, in layer order. Keep the full "/Img/Avatar/…" path: the
+  // renderer's absolutize() prepends the asset origin to a root-absolute path,
+  // so stripping the prefix produced a malformed URL. The host serves these
+  // same-origin (the worker proxies /Img/Avatar/* to Hattrick).
   const faceElements: AvatarPart[] = layers
     .filter((l) => {
       const cat = category(l.image);
       return cat !== null && HEAD_CATEGORIES.includes(cat);
     })
-    .map((l) => ({ url: l.image.slice(AVATAR_PREFIX.length), x: l.x ?? 0, y: l.y ?? 0 }));
+    .map((l) => ({ url: l.image, x: l.x ?? 0, y: l.y ?? 0 }));
 
   // Body type + kit from the kit body image (res.hattrick.org/kits/.../bodyN.png).
   let bodyType = 1;

@@ -115,6 +115,33 @@ app.get(`${BASE}/api/squad`, async (c) => {
   }
 });
 
+// Same-origin proxy for Hattrick avatar assets. The team-photo render draws the
+// player's face parts and reads their kit data; serving them from this origin
+// keeps the export canvas untainted and avoids vendoring per-player PNGs. Only
+// these two upstream origins and prefixes are proxied (not an open proxy).
+async function proxyAsset(upstream: string): Promise<Response> {
+  const r = await fetch(upstream, {
+    cf: { cacheTtl: 86400, cacheEverything: true },
+  } as RequestInit);
+  if (!r.ok) return new Response("upstream asset error", { status: r.status });
+  const headers = new Headers();
+  const ct = r.headers.get("content-type");
+  if (ct) headers.set("content-type", ct);
+  headers.set("cache-control", "public, max-age=86400");
+  return new Response(r.body, { status: 200, headers });
+}
+
+// Face parts etc.: /team-photo/Img/Avatar/… → www.hattrick.org/Img/Avatar/…
+app.get(`${BASE}/Img/Avatar/*`, (c) => {
+  const path = new URL(c.req.url).pathname.slice(BASE.length); // "/Img/Avatar/…"
+  return proxyAsset(`https://www.hattrick.org${path}`);
+});
+// Kit data: /team-photo/_kit/… → res.hattrick.org/…
+app.get(`${BASE}/_kit/*`, (c) => {
+  const path = new URL(c.req.url).pathname.slice(`${BASE}/_kit`.length); // "/kits/…"
+  return proxyAsset(`https://res.hattrick.org${path}`);
+});
+
 // Everything else: serve the static builds from the ASSETS binding. The build
 // layout mirrors the URL paths (public/team-photo/…, public/player-renderer/…),
 // so requests map straight to files.

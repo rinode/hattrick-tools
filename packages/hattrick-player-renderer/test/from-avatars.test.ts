@@ -21,13 +21,13 @@ describe("renderInputsFromAvatar", () => {
     const r = renderInputsFromAvatar(AVATAR, { gender: 1 });
 
     // Head parts only (no background, kit body or number), order preserved,
-    // with the /Img/Avatar/ prefix stripped to the page's relative form.
+    // keeping the full /Img/Avatar/ path so absolutize() resolves it correctly.
     expect(r.faceElements).toEqual([
-      { url: "faces/f9a.png", x: 9, y: 10 },
-      { url: "eyes/e10a.png", x: 21, y: 17 },
-      { url: "mouths/m30a.png", x: 31, y: 64 },
-      { url: "noses/n30.png", x: 16, y: 17 },
-      { url: "hair/f9h3e.png", x: 9, y: 10 },
+      { url: "/Img/Avatar/faces/f9a.png", x: 9, y: 10 },
+      { url: "/Img/Avatar/eyes/e10a.png", x: 21, y: 17 },
+      { url: "/Img/Avatar/mouths/m30a.png", x: 31, y: 64 },
+      { url: "/Img/Avatar/noses/n30.png", x: 16, y: 17 },
+      { url: "/Img/Avatar/hair/f9h3e.png", x: 9, y: 10 },
     ]);
 
     expect(r.bodyType).toBe(10);
