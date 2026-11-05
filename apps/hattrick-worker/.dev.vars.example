@@ -1,0 +1,6 @@
+# Copy to .dev.vars for `wrangler dev` (gitignored). In production set these
+# with `wrangler secret put <NAME>`.
+HATTRICK_CONSUMER_KEY=your_consumer_key
+HATTRICK_CONSUMER_SECRET=your_consumer_secret
+# A long random string; it encrypts the session cookies.
+SESSION_SECRET=change-me-to-a-long-random-string

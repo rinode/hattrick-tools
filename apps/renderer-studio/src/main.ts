@@ -8,6 +8,9 @@ import {
 } from "hattrick-player-renderer";
 import faceCatalog from "./face-catalog.json";
 
+// Served under a base path (/player-renderer); vendor assets live under it too.
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+
 // Catalog: category -> filename -> [x, y] offset, plus a `_tones` block with
 // the real skin-tone palette baked from the face-base PNGs.
 type FaceCatalog = Record<string, Record<string, [number, number]>>;
@@ -314,16 +317,17 @@ async function render(): Promise<void> {
   document.body.appendChild(holder);
   try {
     const out = await renderInputs(gatherInputs(), holder, {
-      slimKitUrl: "/Club/Players/Avatars/slimkitrender.js",
-      fullBodiesUrl: "/Club/Players/Avatars/HT.FullBodies.js",
-      assetOrigin: location.origin,
+      slimKitUrl: `${BASE}/Club/Players/Avatars/slimkitrender.js`,
+      fullBodiesUrl: `${BASE}/Club/Players/Avatars/HT.FullBodies.js`,
+      assetOrigin: location.origin + BASE,
     });
     if (my !== seq) return;
     lastOutput = out;
     stage.replaceChildren(out);
     status.textContent = `Rendered ${outputSize(out)}.`;
   } catch (err) {
-    if (my === seq) status.textContent = "Error: " + (err instanceof Error ? err.message : String(err));
+    if (my === seq)
+      status.textContent = "Error: " + (err instanceof Error ? err.message : String(err));
   } finally {
     holder.remove();
   }

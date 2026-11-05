@@ -6,6 +6,14 @@ node_modules/
 dist/
 *.tsbuildinfo
 
+# MCPB bundle artifacts (built in CI, attached to releases — never committed)
+build/
+dist-mcpb/
+*.mcpb
+
+# Playwright persistent profile (runtime state)
+*-profile/
+
 # turbo
 .turbo/
 
@@ -15,9 +23,9 @@ dist/
 !.env.example
 credentials.json
 
-# Vendored Hattrick full-body assets (SVG/JSON/TXT/JS + face part PNGs) are
-# committed on purpose for this private repo — see
-# packages/hattrick-player-renderer/vendor. Refresh with:
+# Vendored Hattrick full-body assets (text: SVG/JSON/TXT/JS) and face part PNGs
+# are committed on purpose for this private repo — see
+# packages/hattrick-player-renderer/vendor. Populate/refresh them with:
 #   pnpm --filter hattrick-player-renderer fetch-assets
 
 # binaries — never commit compiled artifacts to git
@@ -29,3 +37,10 @@ credentials.json
 .DS_Store
 *.log
 coverage/
+
+# Cloudflare Workers local
+.dev.vars
+.wrangler/
+
+# Cloudflare Worker combined asset build root
+apps/hattrick-worker/public/

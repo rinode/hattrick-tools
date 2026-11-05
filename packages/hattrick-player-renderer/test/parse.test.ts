@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { extractInitArgs, parseInitArgs, splitTopLevel } from "../src/parse.js";
-import { absolutize } from "../src/browser.js";
+import { absolutize, faceChain } from "../src/browser.js";
 
 // A realistic fragment of a player page, with the init call embedded in
 // surrounding script noise and followed by the render() call. These are the
@@ -51,6 +51,28 @@ describe("parseInitArgs", () => {
 
   it("throws when the init call is absent", () => {
     expect(() => parseInitArgs("<html>no renderer here</html>")).toThrow(/not found/);
+  });
+});
+
+describe("faceChain", () => {
+  it("returns null for an empty set (so slimkit renders a bare body, not a crash)", () => {
+    expect(faceChain([], "https://www.hattrick.org")).toBeNull();
+  });
+
+  it("builds a .next-linked chain with absolutized urls", () => {
+    const chain = faceChain(
+      [
+        { url: "/Img/Avatar/faces/f9a.png", x: 9, y: 10 },
+        { url: "/Img/Avatar/eyes/e10a.png", x: 21, y: 17 },
+        { url: "/Img/Avatar/hair/f9h3e.png", x: 9, y: 10 },
+      ],
+      "https://www.hattrick.org",
+    )!;
+    expect(chain).toHaveLength(3);
+    expect(chain[0]!.url).toBe("https://www.hattrick.org/Img/Avatar/faces/f9a.png");
+    expect(chain[0]!.next).toBe(chain[1]);
+    expect(chain[1]!.next).toBe(chain[2]);
+    expect(chain[2]!.next).toBeNull();
   });
 });
 

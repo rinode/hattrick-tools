@@ -1,5 +1,4 @@
-import { createHmac, randomBytes } from "node:crypto";
-import { buildBaseString, percentEncode } from "./oauth.js";
+import { buildBaseString, hmacSha1Base64, percentEncode, randomNonce } from "./oauth.js";
 import { CHPP_OAUTH_BASE, type FetchLike } from "./transport.js";
 
 /** A stored CHPP access token (what you persist after authorizing). */
@@ -15,13 +14,13 @@ export interface RequestToken {
   authorizeUrl: string;
 }
 
-function oauthHeader(
+async function oauthHeader(
   method: string,
   url: string,
   consumerSecret: string,
   tokenSecret: string,
   params: Record<string, string>,
-): string {
+): Promise<string> {
   const u = new URL(url);
   const baseUrl = `${u.protocol}//${u.host}${u.pathname}`;
   const all: Record<string, string> = { ...params };
@@ -29,7 +28,7 @@ function oauthHeader(
 
   const baseString = buildBaseString(method, baseUrl, all);
   const key = `${percentEncode(consumerSecret)}&${percentEncode(tokenSecret)}`;
-  const signature = createHmac("sha1", key).update(baseString).digest("base64");
+  const signature = await hmacSha1Base64(key, baseString);
 
   const signed = { ...params, oauth_signature: signature };
   return (
@@ -44,7 +43,7 @@ function oauthHeader(
 function baseOauthParams(consumerKey: string): Record<string, string> {
   return {
     oauth_consumer_key: consumerKey,
-    oauth_nonce: randomBytes(16).toString("hex"),
+    oauth_nonce: randomNonce(),
     oauth_timestamp: String(Math.floor(Date.now() / 1000)),
     oauth_signature_method: "HMAC-SHA1",
     oauth_version: "1.0",
@@ -67,11 +66,13 @@ function parseForm(body: string): Record<string, string> {
 export async function getRequestToken(
   consumerKey: string,
   consumerSecret: string,
+  /** Callback URL the user is redirected back to, or "oob" for the PIN flow. */
+  callback: string = "oob",
   fetchImpl: FetchLike = globalThis.fetch as unknown as FetchLike,
 ): Promise<RequestToken> {
   const url = `${CHPP_OAUTH_BASE}request_token.ashx`;
-  const params = { ...baseOauthParams(consumerKey), oauth_callback: "oob" };
-  const header = oauthHeader("GET", url, consumerSecret, "", params);
+  const params = { ...baseOauthParams(consumerKey), oauth_callback: callback };
+  const header = await oauthHeader("GET", url, consumerSecret, "", params);
   const res = await fetchImpl(url, { method: "GET", headers: { Authorization: header } });
   const form = parseForm(await res.text());
   const requestToken = form["oauth_token"] ?? "";
@@ -101,7 +102,7 @@ export async function getAccessToken(
     oauth_token: requestToken,
     oauth_verifier: verifier,
   };
-  const header = oauthHeader("GET", url, consumerSecret, requestSecret, params);
+  const header = await oauthHeader("GET", url, consumerSecret, requestSecret, params);
   const res = await fetchImpl(url, { method: "GET", headers: { Authorization: header } });
   const form = parseForm(await res.text());
   return {

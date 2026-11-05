@@ -9,7 +9,7 @@ import type {
   TeamPlayers,
   Training,
   TransferSearchResults,
-} from "hattrick-chpp-node";
+} from "hattrick-chpp";
 
 /** Denominates a 0–20 skill as "name (n)", omitted entirely when 0. */
 function skill(n: number): string | undefined {
@@ -210,7 +210,8 @@ export function plain(v: unknown): unknown {
       if (val === "" || val === null || val === undefined) continue;
       if (Array.isArray(val) && val.length === 0) continue;
       const pv = plain(val);
-      if (pv && typeof pv === "object" && !Array.isArray(pv) && Object.keys(pv).length === 0) continue;
+      if (pv && typeof pv === "object" && !Array.isArray(pv) && Object.keys(pv).length === 0)
+        continue;
       out[k] = pv;
     }
     return out;

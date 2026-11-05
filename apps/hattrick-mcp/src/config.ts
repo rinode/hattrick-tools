@@ -4,7 +4,7 @@ import { Account } from "./account.js";
 // Credential loading is shared across the Node tooling. Consumer key/secret
 // come from the environment; the access token comes from the login flow's
 // cached credentials.json (or HATTRICK_ACCESS_TOKEN / HATTRICK_ACCESS_SECRET).
-export { loadCredentials } from "hattrick-chpp-node/node";
+export { loadCredentials } from "hattrick-chpp/node";
 
 /**
  * Builds an Account from the environment. Only the consumer key/secret are
@@ -34,7 +34,6 @@ export function loadAccount(env: NodeJS.ProcessEnv = process.env): Account {
     }
   }
 
-  const token =
-    accessToken && accessSecret ? { accessToken, accessSecret } : undefined;
+  const token = accessToken && accessSecret ? { accessToken, accessSecret } : undefined;
   return new Account(consumerKey, consumerSecret, { token, credentialsPath });
 }

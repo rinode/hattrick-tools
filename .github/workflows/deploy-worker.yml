@@ -1,0 +1,42 @@
+name: Deploy worker (Cloudflare)
+
+# Builds both static apps into the Worker's combined asset root and deploys the
+# Worker, which serves them (/team-photo, /player-renderer) plus /team-photo/api.
+# Needs repo secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID. CHPP secrets
+# are set once via `wrangler secret put` (HATTRICK_CONSUMER_KEY,
+# HATTRICK_CONSUMER_SECRET, SESSION_SECRET), not here.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/hattrick-worker/**"
+      - "apps/hattrick-team-photo/**"
+      - "apps/renderer-studio/**"
+      - "packages/**"
+      - ".github/workflows/deploy-worker.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build workspace deps
+        run: pnpm --filter hattrick-chpp --filter hattrick-player-renderer build
+      - name: Build apps into the worker asset root
+        run: pnpm --filter hattrick-team-photo --filter renderer-studio build
+      - name: Deploy worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/hattrick-worker

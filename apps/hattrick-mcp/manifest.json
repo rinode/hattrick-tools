@@ -1,0 +1,48 @@
+{
+  "manifest_version": "0.3",
+  "name": "hattrick",
+  "display_name": "Hattrick",
+  "version": "0.0.0",
+  "description": "Full Hattrick CHPP tool set (team, players, matches, youth, national teams, tournaments, transfers, live) with confirm-gated writes. Node build.",
+  "author": {
+    "name": "rinode",
+    "email": "mail@vanmarino.nl"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rinode/hattrick-tools"
+  },
+  "license": "MIT",
+  "keywords": ["hattrick", "chpp", "football", "soccer", "manager"],
+  "server": {
+    "type": "node",
+    "entry_point": "server/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/server/index.js", "serve"],
+      "env": {
+        "HATTRICK_CONSUMER_KEY": "${user_config.consumer_key}",
+        "HATTRICK_CONSUMER_SECRET": "${user_config.consumer_secret}"
+      }
+    }
+  },
+  "user_config": {
+    "consumer_key": {
+      "type": "string",
+      "title": "CHPP consumer key",
+      "description": "Consumer key of your approved CHPP product",
+      "required": true,
+      "sensitive": true
+    },
+    "consumer_secret": {
+      "type": "string",
+      "title": "CHPP consumer secret",
+      "description": "Consumer secret of your approved CHPP product",
+      "required": true,
+      "sensitive": true
+    }
+  },
+  "compatibility": {
+    "runtimes": { "node": ">=20" }
+  }
+}

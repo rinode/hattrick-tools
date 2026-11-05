@@ -1,5 +1,10 @@
 import { parseInitArgs } from "./parse.js";
-import { HATTRICK_ORIGIN, renderInputs, type RenderOutput, type RendererOptions } from "./browser.js";
+import {
+  HATTRICK_ORIGIN,
+  renderInputs,
+  type RenderOutput,
+  type RendererOptions,
+} from "./browser.js";
 import type { RenderInputs } from "./types.js";
 
 /**

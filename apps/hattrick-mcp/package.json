@@ -7,20 +7,24 @@
   "bin": {
     "hattrick-mcp": "./dist/cli.js"
   },
-  "files": [
-    "dist"
-  ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "start": "node dist/cli.js",
-    "login": "node dist/cli.js login"
+    "login": "node dist/cli.js login",
+    "bundle:mcpb": "tsup --config tsup.mcpb.config.ts",
+    "pack:mcpb": "pnpm bundle:mcpb && node scripts/pack-mcpb.mjs"
   },
+  "files": [
+    "dist",
+    "knowledge",
+    "manifest.json"
+  ],
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.0",
-    "hattrick-chpp-node": "workspace:*",
+    "hattrick-chpp": "workspace:*",
     "hattrick-core": "workspace:*",
     "zod": "^3.24.1"
   }

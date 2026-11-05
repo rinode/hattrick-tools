@@ -333,19 +333,27 @@ export class HattrickClient {
   /** A given team's former players. */
   async getOldPlayers(teamId: number): Promise<TeamPlayers> {
     return mapPlayers(
-      await this.get(PLAYERS_FILE, PLAYERS_VERSION, { actionType: "viewOldies", teamId: String(teamId) }),
+      await this.get(PLAYERS_FILE, PLAYERS_VERSION, {
+        actionType: "viewOldies",
+        teamId: String(teamId),
+      }),
     );
   }
 
   /** The user's own former trainers. */
   async getMyOldCoaches(): Promise<TeamPlayers> {
-    return mapPlayers(await this.get(PLAYERS_FILE, PLAYERS_VERSION, { actionType: "viewOldCoaches" }));
+    return mapPlayers(
+      await this.get(PLAYERS_FILE, PLAYERS_VERSION, { actionType: "viewOldCoaches" }),
+    );
   }
 
   /** A given team's former trainers. */
   async getOldCoaches(teamId: number): Promise<TeamPlayers> {
     return mapPlayers(
-      await this.get(PLAYERS_FILE, PLAYERS_VERSION, { actionType: "viewOldCoaches", teamId: String(teamId) }),
+      await this.get(PLAYERS_FILE, PLAYERS_VERSION, {
+        actionType: "viewOldCoaches",
+        teamId: String(teamId),
+      }),
     );
   }
 
@@ -391,22 +399,30 @@ export class HattrickClient {
 
   /** Recent and upcoming senior matches for the user's own team. */
   async getMyMatches(opts: { until?: string } = {}): Promise<TeamMatches> {
-    return mapMatches(await this.get(MATCHES_FILE, MATCHES_VERSION, matchParams(false, undefined, opts.until)));
+    return mapMatches(
+      await this.get(MATCHES_FILE, MATCHES_VERSION, matchParams(false, undefined, opts.until)),
+    );
   }
 
   /** Recent and upcoming senior matches for the given team. */
   async getMatches(teamId: number, opts: { until?: string } = {}): Promise<TeamMatches> {
-    return mapMatches(await this.get(MATCHES_FILE, MATCHES_VERSION, matchParams(false, teamId, opts.until)));
+    return mapMatches(
+      await this.get(MATCHES_FILE, MATCHES_VERSION, matchParams(false, teamId, opts.until)),
+    );
   }
 
   /** Recent and upcoming youth matches for the user's own youth team. */
   async getMyYouthMatches(opts: { until?: string } = {}): Promise<TeamMatches> {
-    return mapMatches(await this.get(MATCHES_FILE, MATCHES_VERSION, matchParams(true, undefined, opts.until)));
+    return mapMatches(
+      await this.get(MATCHES_FILE, MATCHES_VERSION, matchParams(true, undefined, opts.until)),
+    );
   }
 
   /** Recent and upcoming youth matches for the given youth team. */
   async getYouthMatches(teamId: number, opts: { until?: string } = {}): Promise<TeamMatches> {
-    return mapMatches(await this.get(MATCHES_FILE, MATCHES_VERSION, matchParams(true, teamId, opts.until)));
+    return mapMatches(
+      await this.get(MATCHES_FILE, MATCHES_VERSION, matchParams(true, teamId, opts.until)),
+    );
   }
 
   // --- ladders ---
@@ -529,7 +545,9 @@ export class HattrickClient {
 
   /** Trainer and staff members for the given team. */
   async getStaff(teamId: number): Promise<StaffList> {
-    return mapStaffList(await this.get(STAFFLIST_FILE, STAFFLIST_VERSION, { teamId: String(teamId) }));
+    return mapStaffList(
+      await this.get(STAFFLIST_FILE, STAFFLIST_VERSION, { teamId: String(teamId) }),
+    );
   }
 
   // --- player details ---
@@ -587,14 +605,18 @@ export class HattrickClient {
 
   /** Hall of Fame players for the given team. */
   async getHofPlayers(teamId: number): Promise<HofPlayer[]> {
-    return mapHofPlayers(await this.get(HOFPLAYERS_FILE, HOFPLAYERS_VERSION, { teamID: String(teamId) }));
+    return mapHofPlayers(
+      await this.get(HOFPLAYERS_FILE, HOFPLAYERS_VERSION, { teamID: String(teamId) }),
+    );
   }
 
   // --- current bids ---
 
   /** Active, recently finished and hotlisted transfers tracked for the team. */
   async getCurrentBids(): Promise<Bid[]> {
-    return mapCurrentBids(await this.get(CURRENTBIDS_FILE, CURRENTBIDS_VERSION, { actionType: "view" }));
+    return mapCurrentBids(
+      await this.get(CURRENTBIDS_FILE, CURRENTBIDS_VERSION, { actionType: "view" }),
+    );
   }
 
   // --- match details ---
@@ -710,13 +732,20 @@ export class HattrickClient {
 
   /** Teams the user supports. */
   async getMySupportedTeams(pageIndex = 0, pageSize?: number): Promise<SupporterTeam[]> {
-    const v: Record<string, string> = { actionType: "supportedteams", pageIndex: String(pageIndex) };
+    const v: Record<string, string> = {
+      actionType: "supportedteams",
+      pageIndex: String(pageIndex),
+    };
     if (pageSize) v.pageSize = String(pageSize);
     return mapSupportedTeams(await this.get(SUPPORTERS_FILE, SUPPORTERS_VERSION, v));
   }
 
   /** Teams a given user supports. */
-  async getSupportedTeams(userId: number, pageIndex = 0, pageSize?: number): Promise<SupporterTeam[]> {
+  async getSupportedTeams(
+    userId: number,
+    pageIndex = 0,
+    pageSize?: number,
+  ): Promise<SupporterTeam[]> {
     const v: Record<string, string> = {
       actionType: "supportedteams",
       pageIndex: String(pageIndex),
@@ -813,7 +842,12 @@ export class HattrickClient {
   async search(
     searchType: number,
     searchString = "",
-    filters: { searchString2?: string; searchId?: number; searchLeagueId?: number; pageIndex?: number } = {},
+    filters: {
+      searchString2?: string;
+      searchId?: number;
+      searchLeagueId?: number;
+      pageIndex?: number;
+    } = {},
   ): Promise<SearchResult[]> {
     const v: Record<string, string> = {
       searchType: String(searchType),
@@ -956,7 +990,9 @@ export class HattrickClient {
 
   /** The user's own youth league standings. */
   async getMyYouthLeague(): Promise<YouthLeagueDetails> {
-    return mapYouthLeagueDetails(await this.get(YOUTHLEAGUEDETAILS_FILE, YOUTHLEAGUEDETAILS_VERSION, {}));
+    return mapYouthLeagueDetails(
+      await this.get(YOUTHLEAGUEDETAILS_FILE, YOUTHLEAGUEDETAILS_VERSION, {}),
+    );
   }
 
   /** A given youth league's standings. */
@@ -976,10 +1012,15 @@ export class HattrickClient {
   }
 
   /** A given youth league's fixtures (optionally a given season). */
-  async getYouthLeagueFixtures(youthLeagueId: number, season?: number): Promise<YouthLeagueFixtures> {
+  async getYouthLeagueFixtures(
+    youthLeagueId: number,
+    season?: number,
+  ): Promise<YouthLeagueFixtures> {
     const v: Record<string, string> = { youthleagueid: String(youthLeagueId) };
     if (season !== undefined && season !== 0) v.season = String(season);
-    return mapYouthLeagueFixtures(await this.get(YOUTHLEAGUEFIXTURES_FILE, YOUTHLEAGUEFIXTURES_VERSION, v));
+    return mapYouthLeagueFixtures(
+      await this.get(YOUTHLEAGUEFIXTURES_FILE, YOUTHLEAGUEFIXTURES_VERSION, v),
+    );
   }
 
   // --- national teams ---
@@ -996,7 +1037,9 @@ export class HattrickClient {
   /** A national team's details. */
   async getNationalTeamDetails(teamId: number): Promise<NationalTeamDetails> {
     return mapNationalTeamDetails(
-      await this.get(NATIONALTEAMDETAILS_FILE, NATIONALTEAMDETAILS_VERSION, { teamID: String(teamId) }),
+      await this.get(NATIONALTEAMDETAILS_FILE, NATIONALTEAMDETAILS_VERSION, {
+        teamID: String(teamId),
+      }),
     );
   }
 
@@ -1021,7 +1064,9 @@ export class HattrickClient {
       ShowAll: String(opts.showAll ?? false),
     };
     if (opts.matchTypeCategory) v.MatchTypeCategory = opts.matchTypeCategory;
-    return mapNationalPlayersStats(await this.get(NATIONALPLAYERS_FILE, NATIONALPLAYERS_VERSION, v));
+    return mapNationalPlayersStats(
+      await this.get(NATIONALPLAYERS_FILE, NATIONALPLAYERS_VERSION, v),
+    );
   }
 
   /** Upcoming national-team matches for a league-office type. */
@@ -1044,7 +1089,11 @@ export class HattrickClient {
   }
 
   /** World Cup matches for a group (cupSeriesUnitID) and season. */
-  async getWorldCupMatches(cupId: number, season: number, cupSeriesUnitId: number): Promise<WorldCupMatch[]> {
+  async getWorldCupMatches(
+    cupId: number,
+    season: number,
+    cupSeriesUnitId: number,
+  ): Promise<WorldCupMatch[]> {
     const v: Record<string, string> = {
       actionType: "viewMatches",
       season: String(season),
@@ -1072,7 +1121,9 @@ export class HattrickClient {
   async getTournament(tournamentId: number, season?: number): Promise<Tournament> {
     const v: Record<string, string> = { tournamentId: String(tournamentId) };
     if (season !== undefined && season !== 0) v.season = String(season);
-    return mapTournamentDetails(await this.get(TOURNAMENTDETAILS_FILE, TOURNAMENTDETAILS_VERSION, v));
+    return mapTournamentDetails(
+      await this.get(TOURNAMENTDETAILS_FILE, TOURNAMENTDETAILS_VERSION, v),
+    );
   }
 
   /** A tournament's fixtures (optionally a given season or match round). */
@@ -1083,7 +1134,9 @@ export class HattrickClient {
     const v: Record<string, string> = { tournamentId: String(tournamentId) };
     if (opts.season) v.season = String(opts.season);
     if (opts.matchRound) v.matchRound = String(opts.matchRound);
-    return mapTournamentFixtures(await this.get(TOURNAMENTFIXTURES_FILE, TOURNAMENTFIXTURES_VERSION, v));
+    return mapTournamentFixtures(
+      await this.get(TOURNAMENTFIXTURES_FILE, TOURNAMENTFIXTURES_VERSION, v),
+    );
   }
 
   /** A tournament's group league tables (optionally season / world-cup round). */
@@ -1218,7 +1271,12 @@ export class HattrickClient {
       await this.post(
         MATCHORDERS_FILE,
         MATCHORDERS_VERSION,
-        { actionType: "setmatchorder", matchID: String(matchId), teamId: String(teamId), sourceSystem },
+        {
+          actionType: "setmatchorder",
+          matchID: String(matchId),
+          teamId: String(teamId),
+          sourceSystem,
+        },
         lineup,
       ),
     );
@@ -1235,7 +1293,12 @@ export class HattrickClient {
       await this.post(
         MATCHORDERS_FILE,
         MATCHORDERS_VERSION,
-        { actionType: "predictratings", matchID: String(matchId), teamId: String(teamId), sourceSystem },
+        {
+          actionType: "predictratings",
+          matchID: String(matchId),
+          teamId: String(teamId),
+          sourceSystem,
+        },
         lineup,
       ),
     );
@@ -1295,7 +1358,9 @@ export class HattrickClient {
     const v = youthPlayerParams(opts);
     v.actionType = "unlockskills";
     v.youthPlayerId = String(youthPlayerId);
-    return mapYouthPlayerDetails(await this.get(YOUTHPLAYERDETAILS_FILE, YOUTHPLAYERDETAILS_VERSION, v));
+    return mapYouthPlayerDetails(
+      await this.get(YOUTHPLAYERDETAILS_FILE, YOUTHPLAYERDETAILS_VERSION, v),
+    );
   }
 
   // --- live match following ---
@@ -1303,7 +1368,11 @@ export class HattrickClient {
   /** Add a match to the followed live matches. */
   async addLiveMatch(
     matchId: number,
-    opts: { sourceSystem?: string; includeStartingLineup?: boolean; useLiveEventsAndTexts?: boolean } = {},
+    opts: {
+      sourceSystem?: string;
+      includeStartingLineup?: boolean;
+      useLiveEventsAndTexts?: boolean;
+    } = {},
   ): Promise<LiveMatch[]> {
     const v = liveParams(opts);
     v.actionType = "addMatch";
@@ -1415,7 +1484,9 @@ export class HattrickClient {
       includeSupporters: "true",
       teamID: String(teamId),
     };
-    const other = mapTeamDetailsFull(await this.get(TEAMDETAILS_FULL_FILE, TEAMDETAILS_FULL_VERSION, v));
+    const other = mapTeamDetailsFull(
+      await this.get(TEAMDETAILS_FULL_FILE, TEAMDETAILS_FULL_VERSION, v),
+    );
     return other.teams.find((t) => t.id === teamId) ?? other.teams[0];
   }
 

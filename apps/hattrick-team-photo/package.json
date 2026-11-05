@@ -2,7 +2,7 @@
   "name": "hattrick-team-photo",
   "version": "0.0.0",
   "private": true,
-  "description": "Render a team's full-body figures and arrange them into a staggered team photo. CHPP for the roster, hattrick-player-renderer for the figures.",
+  "description": "Static frontend that renders a team's full-body figures into a staggered team photo. Talks to hattrick-backend for the roster and player pages; hattrick-player-renderer draws the figures.",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -12,7 +12,6 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "hattrick-chpp-node": "workspace:*",
     "hattrick-player-renderer": "workspace:*"
   },
   "devDependencies": {

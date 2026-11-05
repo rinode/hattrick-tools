@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import type { FetchLike } from "hattrick-chpp-node";
+import type { FetchLike } from "hattrick-chpp";
 import { buildServer } from "../src/server.js";
 import { Account } from "../src/account.js";
 import { humanizeEconomy, humanizePlayer } from "../src/humanize.js";
@@ -144,7 +144,11 @@ describe("MCP server (in-memory client)", () => {
     let calls = 0;
     const fetchCounting: FetchLike = async () => {
       calls++;
-      return { ok: true, status: 200, text: async () => "<HattrickData><FileName>training.xml</FileName></HattrickData>" };
+      return {
+        ok: true,
+        status: 200,
+        text: async () => "<HattrickData><FileName>training.xml</FileName></HattrickData>",
+      };
     };
     const server = buildServer(account(fetchCounting));
     const [ct, st] = InMemoryTransport.createLinkedPair();

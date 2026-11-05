@@ -1,0 +1,23 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "hattrick-worker",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  // Routes on the Cloudflare zone. The Worker owns both app paths; the apex and
+  // everything else stay free for you to point elsewhere.
+  "routes": [
+    { "pattern": "hattrick-tools.org/team-photo*", "zone_name": "hattrick-tools.org" },
+    { "pattern": "hattrick-tools.org/player-renderer*", "zone_name": "hattrick-tools.org" },
+  ],
+  // Combined build root: public/team-photo/… and public/player-renderer/…,
+  // assembled by `pnpm build`. The Worker handles /team-photo/api/*; assets
+  // serve the rest at matching paths.
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+  },
+  "observability": { "enabled": true },
+  // Secrets (set with `wrangler secret put`, or .dev.vars locally):
+  //   HATTRICK_CONSUMER_KEY, HATTRICK_CONSUMER_SECRET, SESSION_SECRET
+}

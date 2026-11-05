@@ -45,7 +45,7 @@ export class Transport {
     values: Record<string, string> = {},
   ): Promise<string> {
     const url = buildUrl(file, version, values);
-    const { header } = sign("GET", url, this.creds);
+    const { header } = await sign("GET", url, this.creds);
     const res = await this.fetchImpl(url, { method: "GET", headers: { Authorization: header } });
     const text = await res.text();
     if (!res.ok) {
@@ -61,7 +61,7 @@ export class Transport {
     lineup: string,
   ): Promise<string> {
     const url = buildUrl(file, version, values);
-    const { header } = sign("POST", url, this.creds, { bodyParams: { lineup } });
+    const { header } = await sign("POST", url, this.creds, { bodyParams: { lineup } });
     const res = await this.fetchImpl(url, {
       method: "POST",
       headers: {

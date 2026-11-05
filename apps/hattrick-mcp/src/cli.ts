@@ -15,7 +15,7 @@ async function main(): Promise<void> {
   }
 
   if (cmd === "login") {
-    const { runLogin } = await import("hattrick-chpp-node/node");
+    const { runLogin } = await import("hattrick-chpp/node");
     const path = await runLogin();
     process.stdout.write(`\nSaved access token to ${path}\n`);
     return;

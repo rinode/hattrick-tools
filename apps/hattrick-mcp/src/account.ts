@@ -4,7 +4,7 @@ import {
   getRequestToken,
   HattrickClient,
   type FetchLike,
-} from "hattrick-chpp-node";
+} from "hattrick-chpp";
 
 export interface AccountToken {
   accessToken: string;
@@ -41,7 +41,9 @@ export class Account {
   /** A ready CHPP client, or throws if not logged in yet. */
   client(): HattrickClient {
     if (!this.token) {
-      throw new Error("not logged in — call login, open the URL, then complete_login with the code");
+      throw new Error(
+        "not logged in — call login, open the URL, then complete_login with the code",
+      );
     }
     return new HattrickClient(
       {
@@ -56,7 +58,7 @@ export class Account {
 
   /** Step 1: get the authorize URL; the manager grants access and gets a PIN. */
   async login(): Promise<string> {
-    const r = await getRequestToken(this.consumerKey, this.consumerSecret, this.fetchImpl);
+    const r = await getRequestToken(this.consumerKey, this.consumerSecret, "oob", this.fetchImpl);
     this.pending = { requestToken: r.requestToken, requestSecret: r.requestSecret };
     return r.authorizeUrl;
   }
@@ -80,7 +82,8 @@ export class Account {
     try {
       writeFileSync(
         this.credentialsPath,
-        JSON.stringify({ access_token: t.accessToken, access_secret: t.accessSecret }, null, 2) + "\n",
+        JSON.stringify({ access_token: t.accessToken, access_secret: t.accessSecret }, null, 2) +
+          "\n",
       );
     } catch {
       // caching is best-effort; the token still works for this session

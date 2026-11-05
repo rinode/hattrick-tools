@@ -4,7 +4,7 @@ import { getAccessToken, getRequestToken } from "./auth.js";
 import type { OAuthCredentials } from "./oauth.js";
 
 // Node-only helpers (filesystem + stdin). Not exported from the package index,
-// so browser bundles never pull in node:fs — import via "hattrick-chpp-node/node".
+// so browser bundles never pull in node:fs — import via "hattrick-chpp/node".
 
 const DEFAULT_CREDENTIALS = "credentials.json";
 

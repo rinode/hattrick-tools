@@ -117,8 +117,16 @@ export function mapArena(root: HattrickData): Arena {
     leagueName: str(rec(a["League"])["LeagueName"]),
     regionId: num(rec(a["Region"])["RegionID"]),
     regionName: str(rec(a["Region"])["RegionName"]),
-    currentCapacity: { available: bool(cur["@_Available"]), date: str(cur["RebuiltDate"]), ...mapSeats(cur) },
-    expandedCapacity: { available: bool(exp["@_Available"]), date: str(exp["ExpansionDate"]), ...mapSeats(exp) },
+    currentCapacity: {
+      available: bool(cur["@_Available"]),
+      date: str(cur["RebuiltDate"]),
+      ...mapSeats(cur),
+    },
+    expandedCapacity: {
+      available: bool(exp["@_Available"]),
+      date: str(exp["ExpansionDate"]),
+      ...mapSeats(exp),
+    },
   };
 }
 
@@ -830,7 +838,14 @@ export interface MatchDetails {
     soldRoof: number;
     soldVip: number;
   };
-  referee: { id: number; name: string; countryId: number; countryName: string; teamId: number; teamName: string };
+  referee: {
+    id: number;
+    name: string;
+    countryId: number;
+    countryName: string;
+    teamId: number;
+    teamName: string;
+  };
   possessionFirstHalfHome: number;
   possessionFirstHalfAway: number;
   possessionSecondHalfHome: number;
@@ -2001,13 +2016,15 @@ export function mapYouthPlayer(p: R): YouthPlayer {
       setPieces: mapYouthSkill(sk["SetPiecesSkill"]),
       setPiecesMax: mapYouthSkill(sk["SetPiecesSkillMax"]),
     },
-    scoutComments: asArray<R>(rec(rec(p["ScoutCall"])["ScoutComments"])["ScoutComment"]).map((c) => ({
-      text: str(c["CommentText"]),
-      type: num(c["CommentType"]),
-      variation: num(c["CommentVariation"]),
-      skillType: num(c["CommentSkillType"]),
-      skillLevel: num(c["CommentSkillLevel"]),
-    })),
+    scoutComments: asArray<R>(rec(rec(p["ScoutCall"])["ScoutComments"])["ScoutComment"]).map(
+      (c) => ({
+        text: str(c["CommentText"]),
+        type: num(c["CommentType"]),
+        variation: num(c["CommentVariation"]),
+        skillType: num(c["CommentSkillType"]),
+        skillLevel: num(c["CommentSkillLevel"]),
+      }),
+    ),
   };
   if (p["LastMatch"]) {
     const lm = rec(p["LastMatch"]);
@@ -2948,7 +2965,12 @@ export interface Team {
     matchRound: number;
     matchRoundsLeft: number;
   };
-  powerRating: { globalRanking: number; leagueRanking: number; regionRanking: number; rating: number };
+  powerRating: {
+    globalRanking: number;
+    leagueRanking: number;
+    regionRanking: number;
+    rating: number;
+  };
   friendlyTeamId: number;
   seriesId: number;
   seriesName: string;

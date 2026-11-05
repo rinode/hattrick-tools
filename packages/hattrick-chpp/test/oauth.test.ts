@@ -52,9 +52,9 @@ describe("sign", () => {
     accessSecret: "as",
   };
 
-  it("produces a deterministic HMAC-SHA1 signature for fixed nonce/timestamp", () => {
+  it("produces a deterministic HMAC-SHA1 signature for fixed nonce/timestamp", async () => {
     const url = "https://chpp.hattrick.org/chppxml.ashx?file=avatars&version=1.1";
-    const r = sign("GET", url, creds, { nonce: "abc", timestamp: 1700000000 });
+    const r = await sign("GET", url, creds, { nonce: "abc", timestamp: 1700000000 });
 
     // Independently recompute the signature from the exposed base string.
     const expected = createHmac("sha1", "cs&as").update(r.baseString).digest("base64");
@@ -66,10 +66,10 @@ describe("sign", () => {
     expect(r.header).toContain('oauth_nonce="abc"');
   });
 
-  it("is stable across calls with the same inputs", () => {
+  it("is stable across calls with the same inputs", async () => {
     const url = "https://chpp.hattrick.org/chppxml.ashx?file=players&version=2.8&teamId=1";
-    const a = sign("GET", url, creds, { nonce: "x", timestamp: 1 });
-    const b = sign("GET", url, creds, { nonce: "x", timestamp: 1 });
+    const a = await sign("GET", url, creds, { nonce: "x", timestamp: 1 });
+    const b = await sign("GET", url, creds, { nonce: "x", timestamp: 1 });
     expect(a.signature).toBe(b.signature);
   });
 });

@@ -1,4 +1,9 @@
-import { renderByPlayerId } from "hattrick-player-renderer";
+import {
+  renderInputs,
+  renderInputsFromAvatar,
+  type PlayerAvatar,
+  type RenderOutput,
+} from "hattrick-player-renderer";
 import { composeTeamPhoto } from "./compose.js";
 import { computeLayout, DEFAULT_LAYOUT, type LayoutOptions } from "./layout.js";
 
@@ -8,13 +13,21 @@ function el<T extends HTMLElement>(id: string): T {
   return node as T;
 }
 
-interface RosterPlayer {
+interface SquadPlayer {
   id: number;
   name: string;
   number: number;
+  gender: number;
+  avatar: PlayerAvatar | null;
 }
 
-let roster: RosterPlayer[] = [];
+// The app is served under a base path (/team-photo), so the API and the local
+// vendor assets live under it too. BASE_URL is "/team-photo/" in the build and
+// "/" if ever served at the root. VITE_API_BASE still overrides the API origin.
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+const API_BASE = (import.meta.env.VITE_API_BASE ?? BASE).replace(/\/$/, "");
+
+let roster: SquadPlayer[] = [];
 let composed: HTMLCanvasElement | null = null;
 
 function layoutOptions(): LayoutOptions {
@@ -27,9 +40,9 @@ function layoutOptions(): LayoutOptions {
 }
 
 async function loadRoster(): Promise<void> {
-  const res = await fetch("/api/roster");
+  const res = await fetch(`${API_BASE}/api/squad`, { credentials: "include" });
   if (!res.ok) throw new Error(await res.text());
-  const data = (await res.json()) as { teamName: string; players: RosterPlayer[] };
+  const data = (await res.json()) as { teamName: string; players: SquadPlayer[] };
   roster = data.players;
   el("roster").textContent = `${data.teamName}: ${roster.length} players`;
 }
@@ -44,28 +57,25 @@ async function generate(): Promise<void> {
   temp.style.cssText = "position:absolute;left:-9999px;top:0";
   document.body.appendChild(temp);
 
-  const fetchPage = async (id: number): Promise<string> => {
-    const r = await fetch(`/api/player-page?id=${id}`);
-    if (!r.ok) throw new Error(await r.text());
-    return r.text();
-  };
-
-  const canvases: Array<import("hattrick-player-renderer").RenderOutput | null> = [];
+  const canvases: Array<RenderOutput | null> = [];
   for (let i = 0; i < roster.length; i++) {
     status.textContent = `Rendering ${i + 1}/${roster.length}…`;
     const holder = document.createElement("div");
     temp.appendChild(holder);
+    const player = roster[i]!;
     try {
+      if (!player.avatar) throw new Error("no avatar");
+      // Full-body inputs straight from the CHPP avatar — no page scrape.
+      const inputs = renderInputsFromAvatar(player.avatar, { gender: player.gender });
       canvases.push(
-        await renderByPlayerId(roster[i]!.id, holder, {
-          assetOrigin: location.origin,
-          slimKitUrl: "/Club/Players/Avatars/slimkitrender.js",
-          fullBodiesUrl: "/Club/Players/Avatars/HT.FullBodies.js",
-          fetchPage,
+        await renderInputs(inputs, holder, {
+          assetOrigin: location.origin + BASE,
+          slimKitUrl: `${BASE}/Club/Players/Avatars/slimkitrender.js`,
+          fullBodiesUrl: `${BASE}/Club/Players/Avatars/HT.FullBodies.js`,
         }),
       );
     } catch (err) {
-      console.error(`player ${roster[i]!.id}`, err);
+      console.error(`player ${player.id}`, err);
       canvases.push(null);
     }
   }
@@ -96,6 +106,36 @@ el<HTMLButtonElement>("exportBtn").addEventListener("click", () => {
   link.click();
 });
 
-loadRoster().catch((err) => {
-  el("roster").textContent = "Roster error: " + (err instanceof Error ? err.message : String(err));
+async function init(): Promise<void> {
+  const auth = el("auth");
+  let connected = false;
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/status`, { credentials: "include" });
+    connected = res.ok && (await res.json()).connected === true;
+  } catch {
+    /* backend unreachable; fall through to Connect */
+  }
+
+  if (!connected) {
+    el("roster").textContent = "";
+    auth.innerHTML =
+      '<a href="' +
+      `${API_BASE}/api/auth/login` +
+      '" style="display:block"><button type="button">Connect Hattrick</button></a>';
+    return;
+  }
+
+  auth.innerHTML =
+    'Connected · <a id="disconnect" href="#" style="color:var(--accent)">disconnect</a>';
+  el<HTMLAnchorElement>("disconnect").addEventListener("click", (e) => {
+    e.preventDefault();
+    fetch(`${API_BASE}/api/auth/logout`, { method: "POST", credentials: "include" }).finally(() =>
+      location.reload(),
+    );
+  });
+  await loadRoster();
+}
+
+init().catch((err) => {
+  el("roster").textContent = "Error: " + (err instanceof Error ? err.message : String(err));
 });
