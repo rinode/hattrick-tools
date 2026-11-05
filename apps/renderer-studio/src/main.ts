@@ -144,8 +144,8 @@ function currentFaceFile(): string {
   return `f${shape}${resolveTone(shape, selectedTone)}.png`;
 }
 function thumbUrl(cfg: PartCfg, value: string): string {
-  if (cfg.key === FACE) return `/Img/Avatar/${faceBaseCat()}/${currentFaceFile()}`;
-  return value ? `/Img/Avatar/${cfg.key}/${value}` : "";
+  if (cfg.key === FACE) return `${BASE}/Img/Avatar/${faceBaseCat()}/${currentFaceFile()}`;
+  return value ? `${BASE}/Img/Avatar/${cfg.key}/${value}` : "";
 }
 
 // --- Skin-tone swatches ------------------------------------------------------
@@ -257,7 +257,7 @@ function buildSteppers(): void {
 function refreshFaceThumb(): void {
   const img = pickerBox.querySelector<HTMLImageElement>(`.stepper[data-key="${FACE}"] img`);
   if (img) {
-    img.src = `/Img/Avatar/${faceBaseCat()}/${currentFaceFile()}`;
+    img.src = `${BASE}/Img/Avatar/${faceBaseCat()}/${currentFaceFile()}`;
     img.alt = currentFaceFile();
   }
 }
