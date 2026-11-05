@@ -1,10 +1,20 @@
 import type { RenderOutput } from "hattrick-player-renderer";
 import type { Layout, LayoutOptions } from "./layout.js";
 
+function naturalSize(c: RenderOutput): { w: number; h: number } {
+  return c instanceof HTMLCanvasElement
+    ? { w: c.width, h: c.height }
+    : { w: c.naturalWidth, h: c.naturalHeight };
+}
+
 /**
  * Paints an optional background then each rendered figure canvas onto a single
  * export canvas at its laid-out position (placements are back-to-front, so later
  * rows overlap earlier ones correctly).
+ *
+ * Figures render at different native sizes per body type, so each is scaled
+ * uniformly to the common figure height and centered in its slot. Scaling to a
+ * fixed width and height instead would squeeze figures whose aspect differs.
  */
 export function composeTeamPhoto(
   canvases: Array<RenderOutput | null>,
@@ -28,7 +38,16 @@ export function composeTeamPhoto(
 
   for (const p of layout.placements) {
     const canvas = canvases[p.index];
-    if (canvas) ctx.drawImage(canvas, p.x, p.y, opts.figureWidth, opts.figureHeight);
+    if (!canvas) continue;
+    const { w: natW, h: natH } = naturalSize(canvas);
+    if (natW > 0 && natH > 0) {
+      // Uniform scale to the slot height; keep aspect; center within the slot.
+      const scale = opts.figureHeight / natH;
+      const w = natW * scale;
+      ctx.drawImage(canvas, p.x + (opts.figureWidth - w) / 2, p.y, w, opts.figureHeight);
+    } else {
+      ctx.drawImage(canvas, p.x, p.y, opts.figureWidth, opts.figureHeight);
+    }
   }
   return out;
 }
