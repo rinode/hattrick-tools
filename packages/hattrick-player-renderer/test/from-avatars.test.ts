@@ -21,13 +21,14 @@ describe("renderInputsFromAvatar", () => {
     const r = renderInputsFromAvatar(AVATAR, { gender: 1 });
 
     // Head parts only (no background, kit body or number), order preserved,
-    // keeping the full /Img/Avatar/ path so absolutize() resolves it correctly.
+    // full /Img/Avatar/ path, coordinates shifted by the card inset (-4, -5) to
+    // match the full-body renderer. These equal the real player page's init.
     expect(r.faceElements).toEqual([
-      { url: "/Img/Avatar/faces/f9a.png", x: 9, y: 10 },
-      { url: "/Img/Avatar/eyes/e10a.png", x: 21, y: 17 },
-      { url: "/Img/Avatar/mouths/m30a.png", x: 31, y: 64 },
-      { url: "/Img/Avatar/noses/n30.png", x: 16, y: 17 },
-      { url: "/Img/Avatar/hair/f9h3e.png", x: 9, y: 10 },
+      { url: "/Img/Avatar/faces/f9a.png", x: 5, y: 5 },
+      { url: "/Img/Avatar/eyes/e10a.png", x: 17, y: 12 },
+      { url: "/Img/Avatar/mouths/m30a.png", x: 27, y: 59 },
+      { url: "/Img/Avatar/noses/n30.png", x: 12, y: 12 },
+      { url: "/Img/Avatar/hair/f9h3e.png", x: 5, y: 5 },
     ]);
 
     expect(r.bodyType).toBe(10);

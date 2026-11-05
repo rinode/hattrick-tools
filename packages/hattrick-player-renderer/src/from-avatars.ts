@@ -43,6 +43,13 @@ export interface FromAvatarOptions {
 const HEAD_CATEGORIES = ["faces", "eyes", "mouths", "noses", "hair", "beards", "goatees"];
 const AVATAR_PREFIX = "/Img/Avatar/";
 
+// The avatars API positions head parts on the small avatar card, which sits 4px
+// right and 5px down from the full-body renderer's face origin. The player page
+// subtracts this from every part's coordinates; match it so hair and the other
+// parts land correctly on the full body.
+const CARD_INSET_X = 4;
+const CARD_INSET_Y = 5;
+
 function genderCode(g: Gender | undefined): "m" | "f" {
   return g === 2 || g === "f" ? "f" : "m";
 }
@@ -69,13 +76,14 @@ export function renderInputsFromAvatar(
   // Head-overlay parts, in layer order. Keep the full "/Img/Avatar/…" path: the
   // renderer's absolutize() prepends the asset origin to a root-absolute path,
   // so stripping the prefix produced a malformed URL. The host serves these
-  // same-origin (the worker proxies /Img/Avatar/* to Hattrick).
+  // same-origin (the worker proxies /Img/Avatar/* to Hattrick). Coordinates are
+  // shifted by the card inset to match the full-body renderer's origin.
   const faceElements: AvatarPart[] = layers
     .filter((l) => {
       const cat = category(l.image);
       return cat !== null && HEAD_CATEGORIES.includes(cat);
     })
-    .map((l) => ({ url: l.image, x: l.x ?? 0, y: l.y ?? 0 }));
+    .map((l) => ({ url: l.image, x: (l.x ?? 0) - CARD_INSET_X, y: (l.y ?? 0) - CARD_INSET_Y }));
 
   // Body type + kit from the kit body image (res.hattrick.org/kits/.../bodyN.png).
   let bodyType = 1;
