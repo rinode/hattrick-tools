@@ -750,7 +750,107 @@ el<HTMLSelectElement>("playersKit").addEventListener("change", () => void refres
 el<HTMLSelectElement>("keepersKit").addEventListener("change", () => void refreshFigures());
 el<HTMLSelectElement>("staffKit").addEventListener("change", () => void refreshFigures());
 
-// Upload custom kits (kitData.json); each becomes selectable in both kit pickers.
+// --- Uploaded-file lists -----------------------------------------------------
+// Each upload control shows its files below it as rows with a delete cross.
+const customFontFaces = new Map<string, FontFace>(); // family -> face, to delete
+let backgroundName = "";
+let backgroundUrl: string | null = null;
+const KIT_DEFAULT: Record<string, string> = {
+  playersKit: "home",
+  keepersKit: "away",
+  staffKit: "blank",
+};
+
+/** A row for one uploaded file: its name and a cross to delete it. */
+function uploadItem(name: string, onDelete: () => void, fontFamily?: string): HTMLElement {
+  const row = document.createElement("div");
+  row.className = "upload-item";
+  const label = document.createElement("span");
+  label.className = "name";
+  label.textContent = name;
+  if (fontFamily) label.style.fontFamily = fontFamily;
+  const del = document.createElement("button");
+  del.type = "button";
+  del.className = "upload-del";
+  del.textContent = "×";
+  del.setAttribute("aria-label", `Remove ${name}`);
+  del.addEventListener("click", onDelete);
+  row.append(label, del);
+  return row;
+}
+
+function renderFontUploads(): void {
+  const list = el("uploadedFonts");
+  list.replaceChildren();
+  for (const name of customFonts)
+    list.appendChild(uploadItem(name, () => removeFont(name), `"${name}", Verdana, sans-serif`));
+}
+
+function renderKitUploads(): void {
+  const list = el("uploadedKits");
+  list.replaceChildren();
+  for (const name of customKits.keys()) list.appendChild(uploadItem(name, () => removeKit(name)));
+}
+
+function renderBgUpload(): void {
+  const list = el("uploadedBg");
+  list.replaceChildren();
+  if (background && backgroundName) list.appendChild(uploadItem(backgroundName, removeBg));
+}
+
+/** Removes an uploaded font: drop its face, delist it, reset any picker using it. */
+function removeFont(name: string): void {
+  const face = customFontFaces.get(name);
+  if (face) document.fonts.delete(face);
+  customFontFaces.delete(name);
+  customFonts.delete(name);
+  allFonts = allFonts.filter((f) => f !== name);
+  for (const [inputId, styleId, role, def] of [
+    ["headerFont", "headerStyle", "header", "Rosetta"],
+    ["namesFont", "namesStyle", "names", "Roboto"],
+  ] as const) {
+    const inp = el<HTMLInputElement>(inputId);
+    if (inp.value === name) {
+      inp.value = def;
+      inp.style.fontFamily = `"${def}", Verdana, sans-serif`;
+      fillStyleSelect(styleId, def, role);
+    }
+  }
+  renderFontUploads();
+  recompose();
+}
+
+/** Removes an uploaded kit: revoke its URL, delist it, revert any picker using it. */
+function removeKit(name: string): void {
+  const url = customKits.get(name);
+  if (url) URL.revokeObjectURL(url);
+  customKits.delete(name);
+  const value = `upload:${name}`;
+  for (const selId of ["playersKit", "keepersKit", "staffKit"]) {
+    const sel = el<HTMLSelectElement>(selId);
+    const opt = [...sel.options].find((o) => o.value === value);
+    if (opt) {
+      const wasSelected = sel.value === value;
+      opt.remove();
+      if (wasSelected) sel.value = KIT_DEFAULT[selId]!;
+    }
+  }
+  renderKitUploads();
+  void refreshFigures();
+}
+
+/** Removes the uploaded background image. */
+function removeBg(): void {
+  if (backgroundUrl) URL.revokeObjectURL(backgroundUrl);
+  backgroundUrl = null;
+  backgroundName = "";
+  background = null;
+  el<HTMLInputElement>("bgFile").value = "";
+  renderBgUpload();
+  recompose();
+}
+
+// Upload custom kits (kitData.json); each becomes selectable in every kit picker.
 el<HTMLInputElement>("kitUpload").addEventListener("change", (event) => {
   const input = event.target as HTMLInputElement;
   for (const file of Array.from(input.files ?? [])) {
@@ -768,6 +868,7 @@ el<HTMLInputElement>("kitUpload").addEventListener("change", (event) => {
     }
   }
   input.value = "";
+  renderKitUploads();
 });
 
 // Layout and label controls only affect composition, so they recompose instantly.
@@ -832,6 +933,7 @@ el<HTMLInputElement>("fontUpload").addEventListener("change", async (event) => {
       const face = new FontFace(family, await file.arrayBuffer());
       await face.load();
       document.fonts.add(face);
+      customFontFaces.set(family, face);
       customFonts.add(family);
       if (!allFonts.includes(family)) allFonts.unshift(family);
     } catch (err) {
@@ -839,15 +941,7 @@ el<HTMLInputElement>("fontUpload").addEventListener("change", async (event) => {
     }
   }
   input.value = ""; // allow re-uploading the same file name later
-  const list = el("uploadedFonts");
-  list.replaceChildren();
-  for (const name of customFonts) {
-    const row = document.createElement("div");
-    row.className = "uploaded-item";
-    row.textContent = name;
-    row.style.fontFamily = `"${name}", Verdana, sans-serif`;
-    list.appendChild(row);
-  }
+  renderFontUploads();
 });
 
 // Build the initial style lists from the defaults, then fetch the full family
@@ -873,18 +967,16 @@ for (const id of ["stairH", "stairTop", "stairFront"]) {
 el<HTMLInputElement>("bgFile").addEventListener("change", (event) => {
   const file = (event.target as HTMLInputElement).files?.[0];
   if (!file) return;
+  if (backgroundUrl) URL.revokeObjectURL(backgroundUrl);
+  backgroundUrl = URL.createObjectURL(file);
+  backgroundName = file.name;
   const img = new Image();
   img.onload = () => {
     background = img;
+    renderBgUpload();
     recompose();
   };
-  img.src = URL.createObjectURL(file);
-});
-
-el<HTMLButtonElement>("bgClear").addEventListener("click", () => {
-  background = null;
-  el<HTMLInputElement>("bgFile").value = "";
-  recompose();
+  img.src = backgroundUrl;
 });
 
 el<HTMLButtonElement>("exportBtn").addEventListener("click", () => {
