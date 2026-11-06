@@ -10,6 +10,7 @@ import {
 } from "hattrick-player-renderer";
 import { composeTeamPhoto, naturalSize, type PhotoMeta } from "./compose.js";
 import { computeLayout, DEFAULT_LAYOUT, type LayoutOptions } from "./layout.js";
+import { STAIR_TILE } from "./stairs.js";
 
 function el<T extends HTMLElement>(id: string): T {
   const node = document.getElementById(id);
@@ -47,6 +48,15 @@ let background: HTMLImageElement | null = null;
 let crest: HTMLImageElement | null = null;
 let teamName = "";
 let composed: HTMLCanvasElement | null = null;
+
+// The stair floor texture, drawn under each row. Loads once; re-renders when ready.
+let stairs: HTMLImageElement | null = null;
+const stairImg = new Image();
+stairImg.onload = () => {
+  stairs = stairImg;
+  if (composed) recompose();
+};
+stairImg.src = STAIR_TILE;
 
 function layoutOptions(): LayoutOptions {
   return {
@@ -145,7 +155,7 @@ function recompose(): void {
     crest: checked("showCrest") ? crest : null,
     members: checked("showNames") ? members : [],
   };
-  composed = composeTeamPhoto(rendered, computeLayout(widths, opts), opts, background, meta);
+  composed = composeTeamPhoto(rendered, computeLayout(widths, opts), opts, background, meta, stairs);
   composed.style.maxWidth = "100%";
   stage.replaceChildren(composed);
   el("status").textContent = `${rendered.length}/${enabled.length} rendered.`;

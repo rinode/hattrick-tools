@@ -22,6 +22,8 @@ const LINE_H = 26;
 const FOOTER_PAD = 18;
 const NAME_GAP = 28;
 const MIN_WIDTH = 560;
+// Each row's stair sits this far above that row's feet.
+const STAIR_ABOVE_FEET = 30;
 
 // All text is white with a black drop shadow so it reads over any background.
 function withShadow(ctx: CanvasRenderingContext2D, draw: () => void): void {
@@ -46,10 +48,17 @@ export function composeTeamPhoto(
   opts: LayoutOptions,
   background: HTMLImageElement | null = null,
   meta: PhotoMeta = {},
+  stairs: HTMLImageElement | null = null,
 ): HTMLCanvasElement {
   const hasCrest = Boolean(meta.crest && meta.crest.naturalWidth > 0);
   const hasHeader = Boolean((meta.teamName && meta.teamName.trim()) || hasCrest);
   const members = meta.members ?? [];
+
+  const hasStairs = Boolean(stairs && stairs.naturalWidth > 0);
+  const stairW = hasStairs ? stairs!.naturalWidth : 0;
+  const stairH = hasStairs ? stairs!.naturalHeight : 0;
+  // The front row's stair extends below that row's feet by this much.
+  const stairOverhang = hasStairs ? Math.max(0, stairH - STAIR_ABOVE_FEET) : 0;
 
   const headerH = hasHeader ? HEADER_H : 0;
   const footerRows = members.length ? layout.rowCounts.length : 0;
@@ -58,7 +67,7 @@ export function composeTeamPhoto(
 
   const out = document.createElement("canvas");
   out.width = Math.ceil(width);
-  out.height = Math.max(1, headerH + layout.height + footerH);
+  out.height = Math.max(1, headerH + layout.height + stairOverhang + footerH);
   const ctx = out.getContext("2d");
   if (!ctx) throw new Error("no 2d canvas context");
 
@@ -67,6 +76,18 @@ export function composeTeamPhoto(
     const dw = background.naturalWidth * scale;
     const dh = background.naturalHeight * scale;
     ctx.drawImage(background, (out.width - dw) / 2, (out.height - dh) / 2, dw, dh);
+  }
+
+  // Stairs: one tiled band per figure row, 30px above that row's feet, drawn
+  // back-to-front so the front steps overlap the ones behind (like the figures).
+  if (hasStairs) {
+    for (let row = 0; row < layout.rowCounts.length; row++) {
+      const feetY = headerH + row * opts.rowRise + opts.figureHeight;
+      const top = feetY - STAIR_ABOVE_FEET;
+      for (let x = 0; x < out.width; x += stairW) {
+        ctx.drawImage(stairs!, x, top, stairW, stairH);
+      }
+    }
   }
 
   // Header: team name centered, crest against the right edge.
@@ -97,7 +118,7 @@ export function composeTeamPhoto(
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
     ctx.font = '500 15px "Roboto", Verdana, sans-serif';
-    const top = headerH + layout.height + FOOTER_PAD;
+    const top = headerH + layout.height + stairOverhang + FOOTER_PAD;
     let idx = 0;
     layout.rowCounts.forEach((n, row) => {
       const tokens = members.slice(idx, idx + n).map((m) => `${m.number}. ${m.name}`);
