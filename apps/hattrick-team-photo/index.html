@@ -11,8 +11,17 @@
     </header>
     <main>
       <div id="controls" class="panel">
-        <details class="section" open>
-          <summary>Team &amp; squad</summary>
+        <div class="tabbar" role="tablist">
+          <button type="button" class="tab-btn" data-tab="squad">Squad</button>
+          <button type="button" class="tab-btn" data-tab="layout">Layout</button>
+          <button type="button" class="tab-btn" data-tab="display">Show</button>
+          <button type="button" class="tab-btn" data-tab="text">Text</button>
+          <button type="button" class="tab-btn" data-tab="bg">Background</button>
+          <button type="button" class="tab-btn" data-tab="kits">Kits</button>
+          <button type="button" class="tab-btn" data-tab="export">Export</button>
+        </div>
+
+        <div class="tab-panel" data-tab="squad">
           <div class="section-body">
             <div id="auth" style="margin-bottom: 12px"></div>
 
@@ -30,10 +39,9 @@
               >
             </div>
           </div>
-        </details>
+        </div>
 
-        <details class="section" open>
-          <summary>Layout</summary>
+        <div class="tab-panel" data-tab="layout">
           <div class="section-body">
             <label for="rows">Rows</label>
             <div class="slider-row">
@@ -56,10 +64,9 @@
               >
             </div>
           </div>
-        </details>
+        </div>
 
-        <details class="section" open>
-          <summary>Show / hide</summary>
+        <div class="tab-panel" data-tab="display">
           <div class="section-body">
             <div class="check">
               <input id="showName" type="checkbox" checked /><label for="showName" style="margin: 0"
@@ -89,10 +96,9 @@
               >
             </div>
           </div>
-        </details>
+        </div>
 
-        <details class="section" open>
-          <summary>Text</summary>
+        <div class="tab-panel" data-tab="text">
           <div class="section-body">
             <label for="headerFont">Team name font</label>
             <div class="slider-row">
@@ -138,10 +144,9 @@
             <input id="fontUpload" type="file" accept=".ttf,.otf,.woff,.woff2" multiple />
             <div id="uploadedFonts" class="uploaded-list"></div>
           </div>
-        </details>
+        </div>
 
-        <details class="section" open>
-          <summary>Background</summary>
+        <div class="tab-panel" data-tab="bg">
           <div class="section-body">
             <label for="bgColor">Colour</label>
             <input id="bgColor" type="color" value="#3f7137" class="swatch" />
@@ -156,10 +161,9 @@
             <input id="bgFile" type="file" accept="image/*" />
             <button id="bgClear" type="button" class="secondary">Remove image</button>
           </div>
-        </details>
+        </div>
 
-        <details class="section" open>
-          <summary>Kits</summary>
+        <div class="tab-panel" data-tab="kits">
           <div class="section-body">
             <label for="playersKit">Players kit</label>
             <select id="playersKit" class="font-style">
@@ -188,10 +192,14 @@
             <label for="kitUpload">Upload kits</label>
             <input id="kitUpload" type="file" accept=".json,application/json" multiple />
           </div>
-        </details>
+        </div>
 
-        <button id="exportBtn" type="button">Export PNG</button>
-        <div id="status"></div>
+        <div class="tab-panel" data-tab="export">
+          <div class="section-body">
+            <button id="exportBtn" type="button">Export PNG</button>
+            <div id="status"></div>
+          </div>
+        </div>
       </div>
       <div id="stage" class="panel"></div>
     </main>

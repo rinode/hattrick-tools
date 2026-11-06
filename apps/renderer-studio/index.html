@@ -11,8 +11,13 @@
     </header>
     <main>
       <div id="controls" class="panel">
-        <details class="section" open>
-          <summary>Appearance</summary>
+        <div class="tabbar" role="tablist">
+          <button type="button" class="tab-btn" data-tab="appearance">Appearance</button>
+          <button type="button" class="tab-btn" data-tab="body">Body &amp; layout</button>
+          <button type="button" class="tab-btn" data-tab="export">Export</button>
+        </div>
+
+        <div class="tab-panel" data-tab="appearance">
           <div class="section-body">
             <label>Gender</label>
             <div id="genderToggle" class="toggle">
@@ -26,10 +31,9 @@
             <label>Parts</label>
             <div id="facePicker" class="picker"></div>
           </div>
-        </details>
+        </div>
 
-        <details class="section" open>
-          <summary>Body &amp; layout</summary>
+        <div class="tab-panel" data-tab="body">
           <div class="section-body">
             <label for="bodyType">Body type (1-12)</label>
             <select id="bodyType"></select>
@@ -54,10 +58,14 @@
             <label for="kitJson">Kit JSON URL (optional)</label>
             <input id="kitJson" type="text" value="/default-kit.json" />
           </div>
-        </details>
+        </div>
 
-        <button id="exportBtn" type="button" class="secondary">Export PNG</button>
-        <div id="status"></div>
+        <div class="tab-panel" data-tab="export">
+          <div class="section-body">
+            <button id="exportBtn" type="button" class="secondary">Export PNG</button>
+            <div id="status"></div>
+          </div>
+        </div>
       </div>
 
       <div id="stage" class="panel"></div>

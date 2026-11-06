@@ -56,6 +56,11 @@
   box-sizing: border-box;
 }
 
+html,
+body {
+  height: 100%;
+}
+
 body {
   margin: 0;
   font:
@@ -66,6 +71,14 @@ body {
   letter-spacing: 0.2px;
   background: var(--bg);
   color: var(--ink);
+  /* App shell: header on top, main fills the rest so the sidebar is full-height. */
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  flex: 1;
+  min-height: 0;
 }
 
 header {
@@ -154,38 +167,80 @@ button.secondary:hover {
   background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
-/* Collapsible control sections, shared across apps. */
-.section {
+/* Tabbed control panel, shared across apps. The controls column is a full-height
+   flex column: a wrapping tab bar on top, the active panel scrolling in the
+   middle, and a pinned footer (e.g. the export button) at the bottom. */
+#controls {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Segmented control: one rounded, bordered container holds the tabs so they
+   read as a group; segments grow to fill each row, the active one lifted. */
+.tabbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-bottom: 14px;
+  padding: 3px;
+  background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: var(--radius);
-  margin-bottom: 10px;
+  border-radius: 9px;
 }
 
-.section > summary {
-  cursor: pointer;
-  padding: 8px 10px;
+.tab-btn {
+  margin: 0;
+  width: auto;
+  flex: 1 1 auto;
+  padding: 6px 10px;
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-family: inherit;
   font-weight: 600;
-  font-size: 13px;
-  list-style: none;
-  user-select: none;
+  font-size: 12px;
+  text-transform: none;
+  white-space: nowrap;
+  cursor: pointer;
 }
 
-.section > summary::-webkit-details-marker {
+.tab-btn:hover {
+  color: var(--ink);
+}
+
+.tab-btn.active {
+  background: var(--panel);
+  color: var(--accent);
+  border-color: var(--line);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.tab-panel {
   display: none;
 }
 
-.section > summary::before {
-  content: "▸";
-  display: inline-block;
-  margin-right: 8px;
-  color: var(--muted);
-  transition: transform 0.15s;
+#controls .tab-panel.active {
+  display: block;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 
-.section[open] > summary::before {
-  transform: rotate(90deg);
-}
+/* On narrow screens the panel stacks above the render area and the page scrolls
+   normally, so drop the full-height constraints. */
+@media (max-width: 720px) {
+  body {
+    height: auto;
+  }
 
-.section-body {
-  padding: 0 10px 10px;
+  #controls {
+    overflow: visible;
+  }
+
+  #controls .tab-panel.active {
+    overflow: visible;
+    flex: none;
+  }
 }

@@ -18,6 +18,19 @@ function el<T extends HTMLElement>(id: string): T {
   return node as T;
 }
 
+/** Wires the config tab bar: clicking a tab shows its panel, hides the rest. */
+function setupTabs(): void {
+  const btns = [...document.querySelectorAll<HTMLButtonElement>(".tab-btn")];
+  const panels = [...document.querySelectorAll<HTMLElement>(".tab-panel")];
+  const show = (name: string): void => {
+    for (const b of btns) b.classList.toggle("active", b.dataset.tab === name);
+    for (const p of panels) p.classList.toggle("active", p.dataset.tab === name);
+  };
+  for (const b of btns) b.addEventListener("click", () => show(b.dataset.tab ?? ""));
+  if (btns[0]?.dataset.tab) show(btns[0].dataset.tab);
+}
+setupTabs();
+
 interface SquadPlayer {
   id: number;
   name: string;
