@@ -168,7 +168,8 @@ function recompose(): void {
     crest: checked("showCrest") ? crest : null,
     members: checked("showNames") ? members : [],
   };
-  composed = composeTeamPhoto(rendered, computeLayout(widths, opts), opts, background, meta, stairs);
+  const floor = checked("showStairs") ? stairs : null;
+  composed = composeTeamPhoto(rendered, computeLayout(widths, opts), opts, background, meta, floor);
   composed.style.maxWidth = "100%";
   stage.replaceChildren(composed);
   el("status").textContent = `${rendered.length}/${enabled.length} rendered.`;
@@ -303,7 +304,7 @@ async function loadDemo(): Promise<void> {
 }
 
 // Layout and label controls only affect composition, so they recompose instantly.
-for (const id of ["rows", "stagger", "showName", "showCrest", "showNames"]) {
+for (const id of ["rows", "stagger", "showName", "showCrest", "showNames", "showStairs"]) {
   const ev = id === "rows" ? "input" : "change";
   el<HTMLInputElement>(id).addEventListener(ev, () => recompose());
 }

@@ -83,8 +83,8 @@ export function composeTeamPhoto(
     ctx.drawImage(background, (out.width - dw) / 2, (out.height - dh) / 2, dw, dh);
   }
 
-  // Stairs: one tiled band per figure row, 30px above that row's feet, drawn
-  // back-to-front so the front steps overlap the ones behind (like the figures).
+  // Stairs: one tiled band per figure row, drawn back-to-front so the front
+  // steps overlap the ones behind (like the figures).
   if (hasStairs) {
     for (let row = 0; row < layout.rowCounts.length; row++) {
       const feetY = headerH + row * opts.rowRise + opts.figureHeight;

@@ -24,8 +24,8 @@ export interface StairStyle {
   front: string;
 }
 
-export const DEFAULT_FRONT = 45;
-export const FRONT_MIN = 28;
+export const DEFAULT_FRONT = 25;
+export const FRONT_MIN = 20;
 export const FRONT_MAX = 90;
 
 const EDGE = 3.5;
@@ -33,8 +33,10 @@ const EDGE = 3.5;
 const TOP = 56;
 /** Fixed height of the solid cast shadow. */
 const SHADOW = 12;
-/** How much a front step covers the one behind (the front face's lower part). */
-const OVERLAP = 20;
+// How much a front step covers the one behind. Kept small (near the edge
+// thickness) so each step hides almost none of the step behind, and every
+// step's front face reads about the same height, front row included.
+const OVERLAP = 6;
 
 /** Builds a stair style for a given front/side face height. */
 export function stairStyle(frontHeight: number = DEFAULT_FRONT): StairStyle {
