@@ -22,8 +22,11 @@ const LINE_H = 26;
 const FOOTER_PAD = 18;
 const NAME_GAP = 28;
 const MIN_WIDTH = 560;
-// Each row's stair sits this far above that row's feet.
-const STAIR_ABOVE_FEET = 30;
+// Each row's feet sit this far below the stair tile's top, centering them in the
+// grey top surface so there is tread both in front of and behind the feet.
+const STAIR_ABOVE_FEET = 32;
+// Drop figures slightly so their rendered shadow rests on the step.
+const FIGURE_DROP = 10;
 
 // All text is white with a black drop shadow so it reads over any background.
 function withShadow(ctx: CanvasRenderingContext2D, draw: () => void): void {
@@ -64,10 +67,12 @@ export function composeTeamPhoto(
   const footerRows = members.length ? layout.rowCounts.length : 0;
   const footerH = footerRows ? FOOTER_PAD * 2 + footerRows * LINE_H : 0;
   const width = Math.max(layout.width, MIN_WIDTH);
+  // Space below the last row: the stair overhang, but at least the figure drop.
+  const bodyExtra = Math.max(stairOverhang, FIGURE_DROP);
 
   const out = document.createElement("canvas");
   out.width = Math.ceil(width);
-  out.height = Math.max(1, headerH + layout.height + stairOverhang + footerH);
+  out.height = Math.max(1, headerH + layout.height + bodyExtra + footerH);
   const ctx = out.getContext("2d");
   if (!ctx) throw new Error("no 2d canvas context");
 
@@ -110,7 +115,7 @@ export function composeTeamPhoto(
   const offsetX = (out.width - layout.width) / 2;
   for (const p of layout.placements) {
     const canvas = canvases[p.index];
-    if (canvas) ctx.drawImage(canvas, p.x + offsetX, p.y + headerH, p.w, opts.figureHeight);
+    if (canvas) ctx.drawImage(canvas, p.x + offsetX, p.y + headerH + FIGURE_DROP, p.w, opts.figureHeight);
   }
 
   // Footer: one centered line of names per figure row, same grouping as above.
@@ -118,7 +123,7 @@ export function composeTeamPhoto(
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
     ctx.font = '500 15px "Roboto", Verdana, sans-serif';
-    const top = headerH + layout.height + stairOverhang + FOOTER_PAD;
+    const top = headerH + layout.height + bodyExtra + FOOTER_PAD;
     let idx = 0;
     layout.rowCounts.forEach((n, row) => {
       const tokens = members.slice(idx, idx + n).map((m) => `${m.number}. ${m.name}`);

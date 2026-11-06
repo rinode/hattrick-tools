@@ -1,4 +1,87 @@
-// Tileable 128x128 stair/step texture. Embedded as a data URL so no
-// binary is committed; drawn per player row as the floor.
-export const STAIR_TILE =
-  "data:image/jpeg;base64,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";
+// The stair floor as a parameterized SVG tile, so every dimension and colour is
+// easy to change. One tile is one step, top to bottom: a dark edge, the grey top
+// surface (the tread you stand on), a nosing edge, a solid cast shadow, and the
+// pink front/side face. The tile is drawn per figure row and repeated across the
+// width (see compose.ts).
+//
+// Only the front/side face scales. The grey top keeps a fixed height, so a
+// taller front grows the tile downward only; the same front height feeds the
+// layout's rowRise, so the figure rows spread apart as the steps get taller.
+export interface StairStyle {
+  tileWidth: number;
+  tileHeight: number;
+  /** Thickness of the dark edge lines. */
+  edgeThickness: number;
+  /** Height of the grey top surface (the tread). Fixed. */
+  topHeight: number;
+  /** Height of the solid cast shadow at the top of the front face. Fixed. */
+  shadowHeight: number;
+  /** Height of the front/side face (the adjustable dimension). */
+  frontHeight: number;
+  edge: string;
+  top: string;
+  shadow: string;
+  front: string;
+}
+
+export const DEFAULT_FRONT = 45;
+export const FRONT_MIN = 28;
+export const FRONT_MAX = 90;
+
+const EDGE = 3.5;
+/** Fixed height of the grey top surface. */
+const TOP = 56;
+/** Fixed height of the solid cast shadow. */
+const SHADOW = 12;
+/** How much a front step covers the one behind (the front face's lower part). */
+const OVERLAP = 20;
+
+/** Builds a stair style for a given front/side face height. */
+export function stairStyle(frontHeight: number = DEFAULT_FRONT): StairStyle {
+  return {
+    tileWidth: 128,
+    tileHeight: EDGE + TOP + EDGE + SHADOW + frontHeight + EDGE,
+    edgeThickness: EDGE,
+    topHeight: TOP,
+    shadowHeight: SHADOW,
+    frontHeight,
+    edge: "#0d0805",
+    top: "#d3d3d3",
+    shadow: "#bfabac",
+    front: "#dccece",
+  };
+}
+
+/** Row spacing for a front height: the tile height less the overlap, so steps overlap. */
+export function stairRowRise(frontHeight: number = DEFAULT_FRONT): number {
+  return Math.round(EDGE + TOP + EDGE + SHADOW + frontHeight + EDGE - OVERLAP);
+}
+
+export const STAIR_STYLE: StairStyle = stairStyle(DEFAULT_FRONT);
+
+/** Builds the stair-tile SVG markup for a given style. */
+export function stairTileSvg(s: StairStyle = STAIR_STYLE): string {
+  const { tileWidth: w, tileHeight: h, edgeThickness: t } = s;
+  const topBand = t; // grey top starts below the first edge
+  const nosingTop = t + s.topHeight;
+  const shadowTop = nosingTop + t;
+  const bottomEdgeTop = h - t;
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">` +
+    `<rect width="${w}" height="${h}" fill="${s.front}"/>` + // pink front fills the lower tile
+    `<rect y="0" width="${w}" height="${t}" fill="${s.edge}"/>` + // top edge
+    `<rect y="${topBand}" width="${w}" height="${s.topHeight}" fill="${s.top}"/>` + // grey top surface
+    `<rect y="${nosingTop}" width="${w}" height="${t}" fill="${s.edge}"/>` + // nosing edge
+    `<rect y="${shadowTop}" width="${w}" height="${s.shadowHeight}" fill="${s.shadow}"/>` + // solid cast shadow
+    `<rect y="${bottomEdgeTop}" width="${w}" height="${t}" fill="${s.edge}"/>` + // bottom edge
+    `</svg>`
+  );
+}
+
+/** The stair tile for a given front height, as a data URL ready to load into an Image. */
+export function stairTileUrl(frontHeight: number = DEFAULT_FRONT): string {
+  return "data:image/svg+xml," + encodeURIComponent(stairTileSvg(stairStyle(frontHeight)));
+}
+
+/** The default stair tile as a data URL, ready to load into an Image. */
+export const STAIR_TILE = stairTileUrl(DEFAULT_FRONT);

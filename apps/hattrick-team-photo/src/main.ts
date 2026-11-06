@@ -10,7 +10,7 @@ import {
 } from "hattrick-player-renderer";
 import { composeTeamPhoto, naturalSize, type PhotoMeta } from "./compose.js";
 import { computeLayout, DEFAULT_LAYOUT, type LayoutOptions } from "./layout.js";
-import { STAIR_TILE } from "./stairs.js";
+import { DEFAULT_FRONT, stairRowRise, stairTileUrl } from "./stairs.js";
 
 function el<T extends HTMLElement>(id: string): T {
   const node = document.getElementById(id);
@@ -49,19 +49,32 @@ let crest: HTMLImageElement | null = null;
 let teamName = "";
 let composed: HTMLCanvasElement | null = null;
 
-// The stair floor texture, drawn under each row. Loads once; re-renders when ready.
+// The stair floor texture, drawn under each row. Regenerated whenever the step
+// height changes; re-renders when the new tile is ready.
 let stairs: HTMLImageElement | null = null;
 const stairImg = new Image();
 stairImg.onload = () => {
   stairs = stairImg;
   if (composed) recompose();
 };
-stairImg.src = STAIR_TILE;
+
+function frontHeight(): number {
+  return Number(el<HTMLInputElement>("stairH").value) || DEFAULT_FRONT;
+}
+
+/** Rebuilds the stair tile at the current front-face height. onload recomposes. */
+function updateStairs(): void {
+  stairImg.src = stairTileUrl(frontHeight());
+}
+updateStairs();
 
 function layoutOptions(): LayoutOptions {
   return {
     ...DEFAULT_LAYOUT,
     rows: Number(el<HTMLInputElement>("rows").value),
+    // The front face drives both the stair tile and the row spacing, so a taller
+    // front spaces the figure rows further apart (the grey top stays put).
+    rowRise: stairRowRise(frontHeight()),
     stagger: el<HTMLInputElement>("stagger").checked,
   };
 }
@@ -294,6 +307,10 @@ for (const id of ["rows", "stagger", "showName", "showCrest", "showNames"]) {
   const ev = id === "rows" ? "input" : "change";
   el<HTMLInputElement>(id).addEventListener(ev, () => recompose());
 }
+
+// The front face drives the stair tile and the row spacing; regenerate the tile
+// (its onload recomposes with the new rowRise).
+el<HTMLInputElement>("stairH").addEventListener("input", () => updateStairs());
 
 el<HTMLInputElement>("bgFile").addEventListener("change", (event) => {
   const file = (event.target as HTMLInputElement).files?.[0];
