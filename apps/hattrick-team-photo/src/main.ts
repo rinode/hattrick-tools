@@ -654,20 +654,22 @@ async function loadRoster(teamId?: number): Promise<void> {
       id: s.id,
       number: 0,
       name: s.name || "Staff",
-      enabled: true,
+      // Staff are always listed but start unselected, so the default photo is
+      // the players only; tick a staff row to add them.
+      enabled: false,
       staff: true,
       role: "staff" as Role,
       inputs: avatarInputs(s.avatar!, 1),
     }));
-  applyStaffInclusion();
+  rebuildSquad();
   teamName = data.teamName;
   crest = await loadImage(data.crest);
   await showSquad(data.teamName);
 }
 
-/** Sets `squad` to players, plus staff when the include-staff box is checked. */
-function applyStaffInclusion(): void {
-  squad = checked("includeStaff") ? [...playerItems, ...staffItems] : [...playerItems];
+/** Sets `squad` to the players followed by the staff (staff start unselected). */
+function rebuildSquad(): void {
+  squad = [...playerItems, ...staffItems];
 }
 
 /** Populates the team picker when the user owns more than one team. */
@@ -710,14 +712,14 @@ async function loadDemo(): Promise<void> {
     inputs: randomRenderInputs(),
   }));
   staffItems = [];
-  applyStaffInclusion();
+  rebuildSquad();
   teamName = "Demo FC";
   crest = null;
   await showSquad("demo");
 }
 
 // Re-renders figures under the current kit choices, then recomposes. Used when
-// a kit choice or staff inclusion changes (which need new renders, not just a
+// a kit choice or a figure's role changes (which need new renders, not just a
 // recompose). Cached renders for unchanged keys are reused.
 async function refreshFigures(): Promise<void> {
   const r = el<HTMLInputElement>("rows");
@@ -729,10 +731,6 @@ async function refreshFigures(): Promise<void> {
   recompose();
 }
 
-el<HTMLInputElement>("includeStaff").addEventListener("change", () => {
-  applyStaffInclusion();
-  void refreshFigures();
-});
 el<HTMLSelectElement>("playersKit").addEventListener("change", () => void refreshFigures());
 el<HTMLSelectElement>("keepersKit").addEventListener("change", () => void refreshFigures());
 el<HTMLSelectElement>("staffKit").addEventListener("change", () => void refreshFigures());
