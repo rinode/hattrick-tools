@@ -132,7 +132,10 @@ button {
   border-radius: var(--radius);
   background: var(--accent);
   color: #fff;
+  font-family: "Rosetta", Verdana, sans-serif;
   font-weight: 500;
+  font-size: 16px;
+  text-transform: lowercase;
   cursor: pointer;
 }
 
