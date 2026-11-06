@@ -24,6 +24,10 @@ const LINE_H = 26;
 const FOOTER_PAD = 18;
 const NAME_GAP = 28;
 const MIN_WIDTH = 560;
+const HEADER_FONT = '700 52px "Roboto", Verdana, sans-serif';
+const FOOTER_FONT = '500 15px "Roboto", Verdana, sans-serif';
+// Minimum gap between the team name and the crest before the frame widens.
+const HEADER_GAP = 20;
 // Each row's feet sit this far below the stair tile's top, centering them in the
 // grey top surface so there is tread both in front of and behind the feet.
 const STAIR_ABOVE_FEET = 32;
@@ -68,15 +72,50 @@ export function composeTeamPhoto(
   const headerH = hasHeader ? HEADER_H : 0;
   const footerRows = members.length ? layout.rowCounts.length : 0;
   const footerH = footerRows ? FOOTER_PAD * 2 + footerRows * LINE_H : 0;
-  const width = Math.max(layout.width, MIN_WIDTH);
   // Space below the last row: the stair overhang, but at least the figure drop.
   const bodyExtra = Math.max(stairOverhang, FIGURE_DROP);
 
   const out = document.createElement("canvas");
-  out.width = Math.ceil(width);
-  out.height = Math.max(1, headerH + layout.height + bodyExtra + footerH);
   const ctx = out.getContext("2d");
   if (!ctx) throw new Error("no 2d canvas context");
+
+  // Crest size in the header.
+  const crestH = HEADER_H - 28;
+  const crestW = hasCrest ? meta.crest!.naturalWidth * (crestH / meta.crest!.naturalHeight) : 0;
+
+  // Measure the text so the frame is never too narrow to show it in full. The
+  // name stays centered, so reserve the crest's width (plus a gap) on both sides
+  // to keep it from overlapping the crest.
+  const name = meta.teamName?.trim() ?? "";
+  ctx.font = HEADER_FONT;
+  const nameW = name ? ctx.measureText(name).width : 0;
+  const headerNeed = name
+    ? nameW + 2 * SIDE + (hasCrest ? 2 * (crestW + HEADER_GAP) : 0)
+    : hasCrest
+      ? crestW + 2 * SIDE
+      : 0;
+
+  ctx.font = FOOTER_FONT;
+  let footerLine = 0;
+  if (footerRows) {
+    let idx = 0;
+    for (const n of layout.rowCounts) {
+      const tokens = members.slice(idx, idx + n).map((m) => `${m.number}. ${m.name}`);
+      idx += n;
+      const line =
+        tokens.reduce((a, t) => a + ctx.measureText(t).width, 0) +
+        NAME_GAP * Math.max(0, tokens.length - 1);
+      footerLine = Math.max(footerLine, line);
+    }
+  }
+  const footerNeed = footerRows ? footerLine + 2 * SIDE : 0;
+
+  // Pad the sides by SIDE so the outer figures never touch the edge; widen
+  // further when the header or footer text needs more room.
+  const width = Math.max(layout.width + SIDE * 2, headerNeed, footerNeed, MIN_WIDTH);
+
+  out.width = Math.ceil(width);
+  out.height = Math.max(1, headerH + layout.height + bodyExtra + footerH);
 
   if (background && background.naturalWidth > 0) {
     const scale = Math.max(out.width / background.naturalWidth, out.height / background.naturalHeight);
@@ -102,17 +141,14 @@ export function composeTeamPhoto(
 
   // Header: team name centered, crest against the right edge.
   if (hasHeader) {
-    if (meta.teamName && meta.teamName.trim()) {
+    if (name) {
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.font = '700 52px "Roboto", Verdana, sans-serif';
-      withShadow(ctx, () => ctx.fillText(meta.teamName!.trim(), out.width / 2, headerH / 2));
+      ctx.font = HEADER_FONT;
+      withShadow(ctx, () => ctx.fillText(name, out.width / 2, headerH / 2));
     }
     if (hasCrest) {
-      const crest = meta.crest!;
-      const h = HEADER_H - 28;
-      const w = crest.naturalWidth * (h / crest.naturalHeight);
-      ctx.drawImage(crest, out.width - w - SIDE, (headerH - h) / 2, w, h);
+      ctx.drawImage(meta.crest!, out.width - crestW - SIDE, (headerH - crestH) / 2, crestW, crestH);
     }
   }
 
@@ -127,7 +163,7 @@ export function composeTeamPhoto(
   if (footerRows) {
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
-    ctx.font = '500 15px "Roboto", Verdana, sans-serif';
+    ctx.font = FOOTER_FONT;
     const top = headerH + layout.height + bodyExtra + FOOTER_PAD;
     let idx = 0;
     layout.rowCounts.forEach((n, row) => {

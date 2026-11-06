@@ -224,6 +224,10 @@ function renderSquadList(): void {
 async function showSquad(label: string): Promise<void> {
   figureCache.clear();
   el("teamName").textContent = label;
+  // Rows can go up to one per player (silly, but allowed).
+  const rowsEl = el<HTMLInputElement>("rows");
+  rowsEl.max = String(Math.max(1, squad.length));
+  if (Number(rowsEl.value) > squad.length) rowsEl.value = rowsEl.max;
   renderSquadList();
   await renderFigures();
   recompose();
