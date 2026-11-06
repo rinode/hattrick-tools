@@ -71,14 +71,18 @@ body {
   letter-spacing: 0.2px;
   background: var(--bg);
   color: var(--ink);
-  /* App shell: header on top, main fills the rest so the sidebar is full-height. */
+  /* App shell: header on top, main fills the rest. The page itself never
+     scrolls, so the header and drawer stay put; only the render area scrolls. */
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 main {
   flex: 1;
   min-height: 0;
+  position: relative;
+  overflow: hidden;
 }
 
 header {
@@ -89,6 +93,7 @@ header {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  border-bottom: 1px solid var(--line);
 }
 
 header h1 {
@@ -104,24 +109,28 @@ header a {
   color: #fff;
 }
 
-/* Header button that opens the settings drawer. */
+/* Header button (hamburger) that opens the settings drawer. */
 .menu-toggle {
   margin: 0;
   width: auto;
   flex: 0 0 auto;
-  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
   background: rgba(255, 255, 255, 0.14);
   color: #fff;
   border: 1px solid rgba(255, 255, 255, 0.5);
   border-radius: var(--radius);
-  font-family: "Rosetta", Verdana, sans-serif;
-  font-size: 15px;
-  text-transform: lowercase;
   cursor: pointer;
 }
 
 .menu-toggle:hover {
   background: rgba(255, 255, 255, 0.24);
+}
+
+.menu-toggle svg {
+  display: block;
 }
 
 a {
@@ -161,6 +170,12 @@ textarea:focus {
   border-color: var(--accent);
 }
 
+/* Range inputs: no UA margin, and never wider than their column. */
+input[type="range"] {
+  margin: 0;
+  max-width: 100%;
+}
+
 button {
   margin-top: 14px;
   width: 100%;
@@ -196,20 +211,21 @@ button.secondary:hover {
    tab bar on top and the active panel scrolling below. A backdrop dims the
    rest and closes it on click. */
 #controls {
-  position: fixed;
-  top: var(--header-h, 58px);
+  position: absolute;
+  top: 0;
   bottom: 0;
-  left: 0;
+  right: 0;
   z-index: 50;
   width: min(92vw, 340px);
+  padding: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   border: 0;
-  border-right: 1px solid var(--line);
+  border-left: 1px solid var(--line);
   border-radius: 0;
-  box-shadow: 2px 0 18px rgba(0, 0, 0, 0.18);
-  transform: translateX(-100%);
+  box-shadow: -2px 0 18px rgba(0, 0, 0, 0.18);
+  transform: translateX(100%);
   transition: transform 0.2s ease;
 }
 
@@ -218,8 +234,8 @@ button.secondary:hover {
 }
 
 .drawer-backdrop {
-  position: fixed;
-  inset: var(--header-h, 58px) 0 0 0;
+  position: absolute;
+  inset: 0;
   z-index: 40;
   background: rgba(0, 0, 0, 0.35);
   opacity: 0;
@@ -240,14 +256,15 @@ button.secondary:hover {
   display: flex;
   flex-wrap: wrap;
   gap: 1px;
-  /* Flush to the panel's top and side edges so it reads as the main nav; a
-     bottom border divides it from the content. The -16px matches .panel's
-     padding. The 1px gaps reveal this colour as a dim delimiter. */
-  margin: -16px -16px 16px;
+  /* Don't let the flex column shrink the bar below its buttons' height. */
+  flex: 0 0 auto;
+  /* Flush across the top of the drawer as the main nav; the bottom border
+     divides it from the content, and the 1px gaps are dim delimiters. */
+  margin: 0;
   background: var(--line);
   border: 0;
   border-bottom: 1px solid var(--line);
-  border-radius: calc(var(--radius) - 1px) calc(var(--radius) - 1px) 0 0;
+  border-radius: 0;
   overflow: hidden;
 }
 
@@ -286,4 +303,6 @@ button.secondary:hover {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
+  padding: 14px 16px;
 }

@@ -41,17 +41,11 @@ function setupTabs(): void {
   for (const b of btns) b.addEventListener("click", () => show(b.dataset.tab ?? ""));
   if (btns[0]?.dataset.tab) show(btns[0].dataset.tab);
 
-  // Settings drawer: the toggle and backdrop open/close it; the drawer and
-  // backdrop start below the header, whose height is published as --header-h.
+  // Settings drawer: the toggle and backdrop open/close it. The drawer is
+  // anchored inside <main>, which already sits below the header.
   const controls = document.getElementById("controls");
   const backdrop = document.getElementById("backdrop");
   const toggle = document.getElementById("menuToggle");
-  const header = document.querySelector("header");
-  const syncHeaderH = (): void => {
-    if (header) document.documentElement.style.setProperty("--header-h", `${header.offsetHeight}px`);
-  };
-  syncHeaderH();
-  window.addEventListener("resize", syncHeaderH);
   const setOpen = (open: boolean): void => {
     controls?.classList.toggle("open", open);
     backdrop?.classList.toggle("open", open);

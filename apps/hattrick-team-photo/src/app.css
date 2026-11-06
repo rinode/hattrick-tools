@@ -22,10 +22,18 @@ main {
   color: var(--muted);
 }
 
+/* The Squad tab fills its panel so the roster list can run to the bottom. */
+.tab-panel[data-tab="squad"] .section-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
 .squad {
   display: flex;
   flex-direction: column;
-  max-height: 260px;
+  flex: 1 1 auto;
+  min-height: 120px;
   overflow-y: auto;
   border: 1px solid var(--line);
   border-radius: var(--radius);
