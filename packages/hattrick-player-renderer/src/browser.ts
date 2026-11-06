@@ -65,6 +65,7 @@ export async function loadRenderer(opts: RendererOptions = {}): Promise<HtFullBo
 export function absolutize(pathOrUrl: string, origin: string): string {
   if (!pathOrUrl) return "";
   if (/^https?:\/\//.test(pathOrUrl)) return pathOrUrl;
+  if (/^(blob:|data:)/.test(pathOrUrl)) return pathOrUrl; // already-usable URLs (e.g. uploaded kits)
   if (pathOrUrl.startsWith("//")) return "https:" + pathOrUrl;
   return origin.replace(/\/$/, "") + pathOrUrl;
 }
