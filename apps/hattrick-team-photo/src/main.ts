@@ -670,9 +670,8 @@ async function loadRoster(teamId?: number): Promise<void> {
       id: s.id,
       number: 0,
       name: s.name || "Staff",
-      // Staff are always listed but start unselected, so the default photo is
-      // the players only; tick a staff row to add them.
-      enabled: false,
+      // Staff are always included; untick a row to leave one out.
+      enabled: true,
       staff: true,
       role: "staff" as Role,
       inputs: avatarInputs(s.avatar!, 1),
@@ -913,7 +912,7 @@ async function init(): Promise<void> {
     auth.innerHTML =
       '<a href="' +
       `${API_BASE}/api/auth/login` +
-      '" style="display:block"><button type="button">Connect Hattrick</button></a>' +
+      '" style="display:block"><button type="button">Connect</button></a>' +
       '<p class="demo-note">Not connected. Showing a random demo squad.</p>';
     await loadDemo();
     return;

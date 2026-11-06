@@ -94,6 +94,11 @@ header {
   justify-content: space-between;
   gap: 16px;
   border-bottom: 1px solid var(--line);
+  /* Pinned to the top; never scrolls away or shrinks. */
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  flex-shrink: 0;
 }
 
 header h1 {
@@ -109,7 +114,8 @@ header a {
   color: #fff;
 }
 
-/* Header button (hamburger) that opens the settings drawer. */
+/* Header button (hamburger) that opens the settings drawer. Closed: just the
+   white icon, no chrome. Open: a white button with a green icon. */
 .menu-toggle {
   margin: 0;
   width: auto;
@@ -118,15 +124,21 @@ header a {
   align-items: center;
   justify-content: center;
   padding: 8px;
-  background: rgba(255, 255, 255, 0.14);
+  background: transparent;
   color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  border: 0;
   border-radius: var(--radius);
   cursor: pointer;
 }
 
 .menu-toggle:hover {
-  background: rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.menu-toggle[aria-expanded="true"],
+.menu-toggle[aria-expanded="true"]:hover {
+  background: #fff;
+  color: var(--accent);
 }
 
 .menu-toggle svg {
