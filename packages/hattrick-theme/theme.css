@@ -177,27 +177,33 @@ button.secondary:hover {
 }
 
 /* Segmented control: one rounded, bordered container holds the tabs so they
-   read as a group; segments grow to fill each row, the active one lifted. */
+   read as a group; segments grow to fill each row and the active one is a
+   solid green fill clipped to the container's rounded edges. Nothing about a
+   segment changes size between states, so the labels never shift. */
 .tabbar {
   display: flex;
   flex-wrap: wrap;
-  gap: 3px;
-  margin-bottom: 14px;
-  padding: 3px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 9px;
+  gap: 1px;
+  /* Flush to the panel's top and side edges so it reads as the main nav; a
+     bottom border divides it from the content. The -16px matches .panel's
+     padding. The 1px gaps reveal this colour as a dim delimiter. */
+  margin: -16px -16px 16px;
+  background: var(--line);
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: calc(var(--radius) - 1px) calc(var(--radius) - 1px) 0 0;
+  overflow: hidden;
 }
 
 .tab-btn {
   margin: 0;
   width: auto;
   flex: 1 1 auto;
-  padding: 6px 10px;
-  background: transparent;
+  padding: 7px 10px;
+  background: var(--surface);
   color: var(--muted);
-  border: 1px solid transparent;
-  border-radius: 6px;
+  border: 0;
+  border-radius: 0;
   font-family: inherit;
   font-weight: 600;
   font-size: 12px;
@@ -211,10 +217,8 @@ button.secondary:hover {
 }
 
 .tab-btn.active {
-  background: var(--panel);
-  color: var(--accent);
-  border-color: var(--line);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  background: var(--accent);
+  color: #fff;
 }
 
 .tab-panel {
