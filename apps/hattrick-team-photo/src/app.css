@@ -98,6 +98,41 @@ main {
   min-height: 18px;
 }
 
+/* Square colour swatch instead of the default thin bar. The #controls scope
+   beats the theme's full-width input rule. */
+#controls .swatch {
+  width: 44px;
+  height: 44px;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.swatch::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.swatch::-webkit-color-swatch {
+  border: none;
+  border-radius: calc(var(--radius) - 2px);
+}
+
+.swatch::-moz-color-swatch {
+  border: none;
+  border-radius: calc(var(--radius) - 2px);
+}
+
+/* Centered message shown in the render area (e.g. no players selected). */
+.stage-msg {
+  display: grid;
+  place-items: center;
+  min-height: 440px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .loader {
   display: grid;
   place-items: center;

@@ -12,42 +12,49 @@
     </header>
     <main>
       <div id="controls" class="panel">
-        <label>Gender</label>
-        <div id="genderToggle" class="toggle">
-          <button type="button" data-gender="m" aria-pressed="true">Male</button>
-          <button type="button" data-gender="f" aria-pressed="false">Female</button>
-        </div>
-
-        <label>Skin tone (sets face variant + body colour)</label>
-        <div id="skinSwatches" class="swatches"></div>
-
-        <label>Parts</label>
-        <div id="facePicker" class="picker"></div>
-
-        <details>
-          <summary>Body &amp; layout</summary>
-          <label for="bodyType">Body type (1-12)</label>
-          <select id="bodyType"></select>
-
-          <label for="width">Width (px)</label>
-          <input id="width" type="number" value="240" min="40" max="800" />
-
-          <div class="row">
-            <div>
-              <label for="neckPosition">Neck position</label>
-              <input id="neckPosition" type="number" value="87" />
+        <details class="section" open>
+          <summary>Appearance</summary>
+          <div class="section-body">
+            <label>Gender</label>
+            <div id="genderToggle" class="toggle">
+              <button type="button" data-gender="m" aria-pressed="true">Male</button>
+              <button type="button" data-gender="f" aria-pressed="false">Female</button>
             </div>
-            <div>
-              <label for="hairOffsetX">Hair offset X</label>
-              <input id="hairOffsetX" type="number" value="0" />
-            </div>
+
+            <label>Skin tone (sets face variant + body colour)</label>
+            <div id="skinSwatches" class="swatches"></div>
+
+            <label>Parts</label>
+            <div id="facePicker" class="picker"></div>
           </div>
+        </details>
 
-          <label for="hairOffsetY">Hair offset Y</label>
-          <input id="hairOffsetY" type="number" value="0" />
+        <details class="section" open>
+          <summary>Body &amp; layout</summary>
+          <div class="section-body">
+            <label for="bodyType">Body type (1-12)</label>
+            <select id="bodyType"></select>
 
-          <label for="kitJson">Kit JSON URL (optional)</label>
-          <input id="kitJson" type="text" value="/default-kit.json" />
+            <label for="width">Width (px)</label>
+            <input id="width" type="number" value="240" min="40" max="800" />
+
+            <div class="row">
+              <div>
+                <label for="neckPosition">Neck position</label>
+                <input id="neckPosition" type="number" value="87" />
+              </div>
+              <div>
+                <label for="hairOffsetX">Hair offset X</label>
+                <input id="hairOffsetX" type="number" value="0" />
+              </div>
+            </div>
+
+            <label for="hairOffsetY">Hair offset Y</label>
+            <input id="hairOffsetY" type="number" value="0" />
+
+            <label for="kitJson">Kit JSON URL (optional)</label>
+            <input id="kitJson" type="text" value="/default-kit.json" />
+          </div>
         </details>
 
         <button id="exportBtn" type="button" class="secondary">Export PNG</button>

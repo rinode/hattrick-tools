@@ -93,7 +93,6 @@ function avatarInputs(player: SquadPlayer): RenderInputs {
 
 /** Renders every figure once into the cache. Expensive; run on load. */
 async function renderFigures(): Promise<void> {
-  const status = el("status");
   const temp = document.createElement("div");
   temp.style.cssText = "position:absolute;left:-9999px;top:0";
   document.body.appendChild(temp);
@@ -115,7 +114,6 @@ async function renderFigures(): Promise<void> {
   let done = 0;
   for (const item of squad) {
     count.textContent = `${done + 1}/${squad.length}`;
-    status.textContent = `Rendering ${done + 1}/${squad.length}`;
     if (!figureCache.has(item.id)) {
       const holder = document.createElement("div");
       temp.appendChild(holder);
@@ -136,7 +134,6 @@ async function renderFigures(): Promise<void> {
     done++;
   }
   temp.remove();
-  status.textContent = "";
 }
 
 /** Composes the enabled figures, in order, over the background. Instant. */
@@ -145,8 +142,10 @@ function recompose(): void {
   const enabled = squad.filter((i) => i.enabled);
   if (enabled.length === 0) {
     composed = null;
-    stage.replaceChildren();
-    el("status").textContent = "No players selected.";
+    const empty = document.createElement("div");
+    empty.className = "stage-msg";
+    empty.textContent = "No players selected.";
+    stage.replaceChildren(empty);
     return;
   }
   const opts = layoutOptions();
@@ -173,7 +172,6 @@ function recompose(): void {
   composed = composeTeamPhoto(rendered, computeLayout(widths, opts), opts, background, meta, floor);
   composed.style.maxWidth = "100%";
   stage.replaceChildren(composed);
-  el("status").textContent = `${rendered.length}/${enabled.length} rendered.`;
 }
 
 function move(index: number, delta: number): void {

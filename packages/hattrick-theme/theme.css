@@ -142,3 +142,39 @@ button.secondary {
 button.secondary:hover {
   background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
+
+/* Collapsible control sections, shared across apps. */
+.section {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  margin-bottom: 10px;
+}
+
+.section > summary {
+  cursor: pointer;
+  padding: 8px 10px;
+  font-weight: 600;
+  font-size: 13px;
+  list-style: none;
+  user-select: none;
+}
+
+.section > summary::-webkit-details-marker {
+  display: none;
+}
+
+.section > summary::before {
+  content: "▸";
+  display: inline-block;
+  margin-right: 8px;
+  color: var(--muted);
+  transition: transform 0.15s;
+}
+
+.section[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.section-body {
+  padding: 0 10px 10px;
+}

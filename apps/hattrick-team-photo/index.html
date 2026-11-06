@@ -12,53 +12,77 @@
     </header>
     <main>
       <div id="controls" class="panel">
-        <div id="auth" style="margin-bottom: 12px"></div>
+        <details class="section" open>
+          <summary>Team &amp; squad</summary>
+          <div class="section-body">
+            <div id="auth" style="margin-bottom: 12px"></div>
 
-        <div id="teamPick" style="display: none">
-          <label for="team">Team</label>
-          <select id="team"></select>
-        </div>
+            <div id="teamPick" style="display: none">
+              <label for="team">Team</label>
+              <select id="team"></select>
+            </div>
 
-        <label>Squad <span id="teamName" class="team-name"></span></label>
-        <div id="squad" class="squad"></div>
+            <label>Squad <span id="teamName" class="team-name"></span></label>
+            <div id="squad" class="squad"></div>
+          </div>
+        </details>
 
-        <label for="bgColor">Background colour</label>
-        <input id="bgColor" type="color" value="#3f7137" />
+        <details class="section" open>
+          <summary>Layout</summary>
+          <div class="section-body">
+            <label for="rows">Rows</label>
+            <input id="rows" type="range" min="1" max="8" step="1" value="3" />
 
-        <label for="bgFile">Background image</label>
-        <input id="bgFile" type="file" accept="image/*" />
-        <button id="bgClear" type="button" class="secondary">Remove image</button>
+            <label for="stairH">Row height</label>
+            <input id="stairH" type="range" min="20" max="90" step="1" value="25" />
 
-        <label for="rows">Rows</label>
-        <input id="rows" type="number" value="3" min="1" max="8" />
+            <div class="check">
+              <input id="stagger" type="checkbox" checked /><label for="stagger" style="margin: 0"
+                >Stagger rows</label
+              >
+            </div>
+          </div>
+        </details>
 
-        <div class="check">
-          <input id="showStairs" type="checkbox" checked /><label for="showStairs" style="margin: 0"
-            >Stairs</label
-          >
-        </div>
-        <label for="stairH">Step front</label>
-        <input id="stairH" type="range" min="20" max="90" step="1" value="25" />
-        <div class="check">
-          <input id="stagger" type="checkbox" checked /><label for="stagger" style="margin: 0"
-            >Stagger rows</label
-          >
-        </div>
-        <div class="check">
-          <input id="showName" type="checkbox" checked /><label for="showName" style="margin: 0"
-            >Team name</label
-          >
-        </div>
-        <div class="check">
-          <input id="showCrest" type="checkbox" checked /><label for="showCrest" style="margin: 0"
-            >Crest</label
-          >
-        </div>
-        <div class="check">
-          <input id="showNames" type="checkbox" checked /><label for="showNames" style="margin: 0"
-            >Player names</label
-          >
-        </div>
+        <details class="section" open>
+          <summary>Show / hide</summary>
+          <div class="section-body">
+            <div class="check">
+              <input id="showName" type="checkbox" checked /><label for="showName" style="margin: 0"
+                >Team name</label
+              >
+            </div>
+            <div class="check">
+              <input id="showCrest" type="checkbox" checked /><label for="showCrest" style="margin: 0"
+                >Crest</label
+              >
+            </div>
+            <div class="check">
+              <input id="showNames" type="checkbox" checked /><label for="showNames" style="margin: 0"
+                >Player names</label
+              >
+            </div>
+            <div class="check">
+              <input id="showStairs" type="checkbox" checked /><label
+                for="showStairs"
+                style="margin: 0"
+                >Stairs</label
+              >
+            </div>
+          </div>
+        </details>
+
+        <details class="section" open>
+          <summary>Background</summary>
+          <div class="section-body">
+            <label for="bgColor">Colour</label>
+            <input id="bgColor" type="color" value="#3f7137" class="swatch" />
+
+            <label for="bgFile">Image</label>
+            <input id="bgFile" type="file" accept="image/*" />
+            <button id="bgClear" type="button" class="secondary">Remove image</button>
+          </div>
+        </details>
 
         <button id="exportBtn" type="button">Export PNG</button>
         <div id="status"></div>
