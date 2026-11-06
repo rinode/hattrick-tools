@@ -100,7 +100,9 @@ export function composeTeamPhoto(
   if (footerRows) {
     let idx = 0;
     for (const n of layout.rowCounts) {
-      const tokens = members.slice(idx, idx + n).map((m) => `${m.number}. ${m.name}`);
+      const tokens = members
+        .slice(idx, idx + n)
+        .map((m) => (m.number ? `${m.number}. ${m.name}` : m.name));
       idx += n;
       const line =
         tokens.reduce((a, t) => a + ctx.measureText(t).width, 0) +
@@ -167,7 +169,9 @@ export function composeTeamPhoto(
     const top = headerH + layout.height + bodyExtra + FOOTER_PAD;
     let idx = 0;
     layout.rowCounts.forEach((n, row) => {
-      const tokens = members.slice(idx, idx + n).map((m) => `${m.number}. ${m.name}`);
+      const tokens = members
+        .slice(idx, idx + n)
+        .map((m) => (m.number ? `${m.number}. ${m.name}` : m.name));
       idx += n;
       const widths = tokens.map((t) => ctx.measureText(t).width);
       const total = widths.reduce((a, b) => a + b, 0) + NAME_GAP * Math.max(0, tokens.length - 1);

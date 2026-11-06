@@ -216,7 +216,7 @@ function renderSquadList(): void {
 
     const name = document.createElement("span");
     name.className = "name";
-    name.textContent = `${item.number}. ${item.name}`;
+    name.textContent = item.number ? `${item.number}. ${item.name}` : item.name;
 
     const up = document.createElement("button");
     up.type = "button";
@@ -271,13 +271,17 @@ async function loadRoster(teamId?: number): Promise<void> {
   };
   squad = data.players
     .filter((p) => p.avatar)
-    .map((p) => ({
-      id: p.id,
-      number: p.number,
-      name: p.name || `#${p.number}`,
-      enabled: true,
-      inputs: avatarInputs(p),
-    }));
+    .map((p) => {
+      // Hattrick returns 100 for a player with no shirt number; treat as none.
+      const number = p.number === 100 ? 0 : p.number;
+      return {
+        id: p.id,
+        number,
+        name: p.name || (number ? `#${number}` : "Unnamed"),
+        enabled: true,
+        inputs: avatarInputs(p),
+      };
+    });
   teamName = data.teamName;
   crest = await loadImage(data.crest);
   await showSquad(data.teamName);
