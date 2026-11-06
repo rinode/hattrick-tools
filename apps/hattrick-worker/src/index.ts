@@ -104,6 +104,41 @@ async function fetchDataUrl(url: string): Promise<string | null> {
   }
 }
 
+// A Hattrick dress URI (…/kits/…/matchKit.png) → the proxied kitData.json path
+// the renderer needs. Matches how avatar kit URLs are rewritten client-side.
+function kitDataUrl(dressUri: string | undefined): string | null {
+  if (!dressUri) return null;
+  const proxied = dressUri.replace(/^(?:https?:)?\/\/res\.hattrick\.org\//, "/_kit/");
+  if (!proxied.startsWith("/_kit/")) return null;
+  return proxied.replace(/[^/]+$/, "kitData.json");
+}
+
+// A squad player is a keeper if categorized as one (category 1 = Keepers) or,
+// failing that, if keeper is strictly their strongest skill.
+function isKeeper(p: {
+  categoryId: number;
+  keeperSkill: number;
+  playmakerSkill: number;
+  scorerSkill: number;
+  passingSkill: number;
+  wingerSkill: number;
+  defenderSkill: number;
+  setPiecesSkill: number;
+}): boolean {
+  if (p.categoryId === 1) return true;
+  const k = p.keeperSkill ?? 0;
+  if (k <= 0) return false;
+  const outfield = Math.max(
+    p.playmakerSkill,
+    p.scorerSkill,
+    p.passingSkill,
+    p.wingerSkill,
+    p.defenderSkill,
+    p.setPiecesSkill,
+  );
+  return k > outfield;
+}
+
 function clientFor(c: { env: Env }, sess: AccessToken): HattrickClient {
   return new HattrickClient({
     consumerKey: c.env.HATTRICK_CONSUMER_KEY,
@@ -136,27 +171,57 @@ app.get(`${BASE}/api/squad`, async (c) => {
   const client = clientFor(c, sess);
   const teamId = Number(c.req.query("teamId")) || 0;
   try {
-    const [team, avatars, details] = await Promise.all([
+    const [team, avatars, teams, staffList, staffAvatars] = await Promise.all([
       teamId ? client.getPlayers(teamId) : client.getMyPlayers(),
       teamId ? client.getAvatars(teamId) : client.getMyAvatars(),
-      client.getMyTeamDetails(),
+      // Full team details carry the home/away dress URIs (the summary does not).
+      client.getMyTeams(),
+      (teamId ? client.getStaff(teamId) : client.getMyStaff()).catch(() => null),
+      (teamId ? client.getStaffAvatars(teamId) : client.getMyStaffAvatars()).catch(() => null),
     ]);
     const byId = new Map(avatars.map((a) => [a.playerId, a.avatar]));
     const summary =
-      details.teams.find((t) => t.id === team.teamId) ??
-      details.teams.find((t) => t.isPrimaryClub);
+      teams.find((t) => t.id === team.teamId) ?? teams.find((t) => t.isPrimaryClub);
     const crest = summary?.logoUrl ? await fetchDataUrl(summary.logoUrl) : null;
+
+    // The team's home and away kits, as proxied kitData.json paths. The avatar
+    // kit each player carries IS the home kit; the away kit is derived from the
+    // team's alternate dress (Hattrick exposes no goalkeeper kit at all).
+    const homeKit = kitDataUrl(summary?.dressUri);
+    const awayKit = kitDataUrl(summary?.dressAlternateUri);
+
+    // Staff: the trainer plus hired staff, each joined with their avatar.
+    const staff: { id: number; name: string; avatar: unknown }[] = [];
+    if (staffList && staffAvatars) {
+      const avById = new Map(staffAvatars.staff.map((s) => [s.id, s.avatar]));
+      if (staffList.trainer?.id && staffAvatars.trainerAvatar) {
+        staff.push({
+          id: staffList.trainer.id,
+          name: staffList.trainer.name,
+          avatar: staffAvatars.trainerAvatar,
+        });
+      }
+      for (const m of staffList.staffMembers) {
+        const avatar = avById.get(m.id);
+        if (avatar) staff.push({ id: m.id, name: m.name, avatar });
+      }
+    }
+
     return c.json({
       teamId: team.teamId,
       teamName: team.teamName,
       crest,
+      homeKit,
+      awayKit,
       players: team.players.map((p) => ({
         id: p.id,
         name: [p.firstName, p.nickName, p.lastName].filter(Boolean).join(" "),
         number: p.number,
         gender: p.gender,
+        keeper: isKeeper(p),
         avatar: byId.get(p.id) ?? null,
       })),
+      staff,
     });
   } catch (err) {
     return c.json({ error: err instanceof Error ? err.message : String(err) }, 502);
