@@ -24,6 +24,12 @@ export interface PhotoMeta {
   bgPosition?: string;
   /** Crest size multiplier (1 = default header height). */
   crestScale?: number;
+  /** A freeform image drawn against the left edge of the header (null to hide). */
+  badge?: HTMLImageElement | null;
+  /** Badge size multiplier (1 = default header height). */
+  badgeScale?: number;
+  /** Draw a drop shadow behind the badge. */
+  badgeShadow?: boolean;
   /** Font family for the team-name header. */
   headerFont?: string;
   /** Font weight for the team-name header (default 700). */
@@ -129,7 +135,8 @@ export function composeTeamPhoto(
   stairs: HTMLImageElement | null = null,
 ): HTMLCanvasElement {
   const hasCrest = Boolean(meta.crest && meta.crest.naturalWidth > 0);
-  const hasHeader = Boolean((meta.teamName && meta.teamName.trim()) || hasCrest);
+  const hasBadge = Boolean(meta.badge && meta.badge.naturalWidth > 0);
+  const hasHeader = Boolean((meta.teamName && meta.teamName.trim()) || hasCrest || hasBadge);
   const members = meta.members ?? [];
 
   const headerSize = meta.headerSize ?? DEFAULT_HEADER_SIZE;
@@ -159,9 +166,12 @@ export function composeTeamPhoto(
   const ctx = out.getContext("2d");
   if (!ctx) throw new Error("no 2d canvas context");
 
-  // Crest size in the header, scaled but kept within the header height.
+  // Crest (right) and badge (left) sizes in the header, scaled but kept within
+  // the header height.
   const crestH = Math.min(HEADER_H - 8, (HEADER_H - 28) * (meta.crestScale ?? 1));
   const crestW = hasCrest ? meta.crest!.naturalWidth * (crestH / meta.crest!.naturalHeight) : 0;
+  const badgeH = Math.min(HEADER_H - 8, (HEADER_H - 28) * (meta.badgeScale ?? 1));
+  const badgeW = hasBadge ? meta.badge!.naturalWidth * (badgeH / meta.badge!.naturalHeight) : 0;
 
   // Measure the text so the frame is never too narrow to show it in full. The
   // name stays centered, so reserve the crest's width (plus a gap) on both sides
@@ -169,11 +179,15 @@ export function composeTeamPhoto(
   const name = meta.teamName?.trim() ?? "";
   ctx.font = headerFontStr;
   const nameW = name ? ctx.measureText(name).width : 0;
+  // Reserve the wider of the two header images on each side of a centred name;
+  // with no name, fit both plus a gap if both are present.
+  const sideReserve = Math.max(hasCrest ? crestW : 0, hasBadge ? badgeW : 0);
   const headerNeed = name
-    ? nameW + 2 * SIDE + (hasCrest ? 2 * (crestW + HEADER_GAP) : 0)
-    : hasCrest
-      ? crestW + 2 * SIDE
-      : 0;
+    ? nameW + 2 * SIDE + (sideReserve ? 2 * (sideReserve + HEADER_GAP) : 0)
+    : (hasCrest ? crestW : 0) +
+      (hasBadge ? badgeW : 0) +
+      2 * SIDE +
+      (hasCrest && hasBadge ? HEADER_GAP : 0);
 
   ctx.font = namesFontStr;
   let footerLine = 0;
@@ -236,6 +250,15 @@ export function composeTeamPhoto(
         withShadow(ctx, "#000000", () => ctx.drawImage(meta.crest!, cx, cy, crestW, crestH));
       } else {
         ctx.drawImage(meta.crest!, cx, cy, crestW, crestH);
+      }
+    }
+    if (hasBadge) {
+      const bx = SIDE;
+      const by = (headerH - badgeH) / 2;
+      if (meta.badgeShadow) {
+        withShadow(ctx, "#000000", () => ctx.drawImage(meta.badge!, bx, by, badgeW, badgeH));
+      } else {
+        ctx.drawImage(meta.badge!, bx, by, badgeW, badgeH);
       }
     }
   }

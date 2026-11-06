@@ -40,6 +40,7 @@
           <button type="button" class="tab-btn" data-tab="display">Show</button>
           <button type="button" class="tab-btn" data-tab="text">Text</button>
           <button type="button" class="tab-btn" data-tab="bg">Background</button>
+          <button type="button" class="tab-btn" data-tab="badge">Badge</button>
           <button type="button" class="tab-btn" data-tab="kits">Kits</button>
           <button type="button" class="tab-btn" data-tab="export">Export</button>
         </div>
@@ -205,6 +206,34 @@
               <option value="bottom-left">Bottom left</option>
               <option value="bottom-right">Bottom right</option>
             </select>
+          </div>
+        </div>
+
+        <div class="tab-panel" data-tab="badge">
+          <div class="section-body">
+            <div class="check">
+              <input id="showBadge" type="checkbox" checked /><label
+                for="showBadge"
+                style="margin: 0"
+                >Show badge (top left)</label
+              >
+            </div>
+
+            <label for="badgeFile">Image</label>
+            <input id="badgeFile" type="file" accept="image/*" />
+            <div id="uploadedBadge" class="uploads"></div>
+
+            <label for="badgeScale">Size</label>
+            <div class="slider-row">
+              <input id="badgeScale" type="range" min="50" max="150" step="1" value="100" />
+              <span id="badgeScaleVal" class="slider-val">100%</span>
+            </div>
+
+            <div class="check">
+              <input id="badgeShadow" type="checkbox" /><label for="badgeShadow" style="margin: 0"
+                >Drop shadow</label
+              >
+            </div>
           </div>
         </div>
 

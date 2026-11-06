@@ -92,6 +92,7 @@ const customKits = new Map<string, string>();
 let homeKit: string | null = null;
 let awayKit: string | null = null;
 let background: HTMLImageElement | null = null;
+let badge: HTMLImageElement | null = null;
 let crest: HTMLImageElement | null = null;
 let teamName = "";
 let composed: HTMLCanvasElement | null = null;
@@ -150,6 +151,7 @@ function syncReadouts(): void {
   el("headerSizeVal").textContent = el<HTMLInputElement>("headerSize").value;
   el("namesSizeVal").textContent = el<HTMLInputElement>("namesSize").value;
   el("crestScaleVal").textContent = `${el<HTMLInputElement>("crestScale").value}%`;
+  el("badgeScaleVal").textContent = `${el<HTMLInputElement>("badgeScale").value}%`;
 }
 
 // --- Fonts -------------------------------------------------------------------
@@ -527,6 +529,9 @@ function recompose(): void {
     crest: checked("showCrest") ? crest : null,
     crestShadow: checked("crestShadow"),
     crestScale: Number(el<HTMLInputElement>("crestScale").value) / 100,
+    badge: checked("showBadge") ? badge : null,
+    badgeShadow: checked("badgeShadow"),
+    badgeScale: Number(el<HTMLInputElement>("badgeScale").value) / 100,
     members: checked("showNames") ? members : [],
     bgColor: bgFill(),
     headerFont: el<HTMLInputElement>("headerFont").value || undefined,
@@ -759,6 +764,8 @@ el<HTMLSelectElement>("staffKit").addEventListener("change", () => void refreshF
 const customFontFaces = new Map<string, FontFace>(); // family -> face, to delete
 let backgroundName = "";
 let backgroundUrl: string | null = null;
+let badgeName = "";
+let badgeUrl: string | null = null;
 const KIT_DEFAULT: Record<string, string> = {
   playersKit: "home",
   keepersKit: "away",
@@ -800,6 +807,12 @@ function renderBgUpload(): void {
   const list = el("uploadedBg");
   list.replaceChildren();
   if (background && backgroundName) list.appendChild(uploadItem(backgroundName, removeBg));
+}
+
+function renderBadgeUpload(): void {
+  const list = el("uploadedBadge");
+  list.replaceChildren();
+  if (badge && badgeName) list.appendChild(uploadItem(badgeName, removeBadge));
 }
 
 /** Removes an uploaded font: drop its face, delist it, reset any picker using it. */
@@ -851,6 +864,17 @@ function removeBg(): void {
   background = null;
   el<HTMLInputElement>("bgFile").value = "";
   renderBgUpload();
+  recompose();
+}
+
+/** Removes the uploaded badge image. */
+function removeBadge(): void {
+  if (badgeUrl) URL.revokeObjectURL(badgeUrl);
+  badgeUrl = null;
+  badgeName = "";
+  badge = null;
+  el<HTMLInputElement>("badgeFile").value = "";
+  renderBadgeUpload();
   recompose();
 }
 
@@ -994,6 +1018,29 @@ el<HTMLInputElement>("bgFile").addEventListener("change", (event) => {
     recompose();
   };
   img.src = backgroundUrl;
+});
+
+el<HTMLInputElement>("badgeFile").addEventListener("change", (event) => {
+  const file = (event.target as HTMLInputElement).files?.[0];
+  if (!file) return;
+  if (badgeUrl) URL.revokeObjectURL(badgeUrl);
+  badgeUrl = URL.createObjectURL(file);
+  badgeName = file.name;
+  const img = new Image();
+  img.onload = () => {
+    badge = img;
+    renderBadgeUpload();
+    recompose();
+  };
+  img.src = badgeUrl;
+});
+
+// Badge show/hide, size and shadow.
+el<HTMLInputElement>("showBadge").addEventListener("change", () => recompose());
+el<HTMLInputElement>("badgeShadow").addEventListener("change", () => recompose());
+el<HTMLInputElement>("badgeScale").addEventListener("input", () => {
+  syncReadouts();
+  recompose();
 });
 
 el<HTMLButtonElement>("exportBtn").addEventListener("click", () => {
