@@ -228,17 +228,28 @@ app.get(`${BASE}/api/squad`, async (c) => {
   }
 });
 
-// Same-origin proxy for Hattrick avatar assets. The team-photo render draws the
-// player's face parts and reads their kit data; serving them from this origin
-// keeps the export canvas untainted and avoids vendoring per-player PNGs. Only
-// these two upstream origins and prefixes are proxied (not an open proxy).
-async function proxyAsset(upstream: string): Promise<Response> {
+// A 1x1 transparent PNG, served when a face layer can't be fetched so the
+// renderer still composites the rest of the face instead of a blank head.
+const TRANSPARENT_PNG = Uint8Array.from(
+  atob(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+  ),
+  (ch) => ch.charCodeAt(0),
+);
+
+// Fetch an upstream asset, retrying once on a transient 5xx and never caching a
+// non-2xx response (so a momentary upstream error doesn't stick for a day).
+async function fetchUpstream(upstream: string): Promise<Response> {
   // Identify the client honestly. Some CDNs 403 a fetch with no User-Agent.
-  const r = await fetch(upstream, {
+  const opts = {
     headers: { "User-Agent": "hattrick-tools (+https://hattrick-tools.org)" },
-    cf: { cacheTtl: 86400, cacheEverything: true },
-  } as RequestInit);
-  if (!r.ok) return new Response(`upstream asset error ${r.status}`, { status: r.status });
+    cf: { cacheTtlByStatus: { "200-299": 86400, "400-599": 0 }, cacheEverything: true },
+  } as RequestInit;
+  const r = await fetch(upstream, opts);
+  return r.status >= 500 ? fetch(upstream, opts) : r;
+}
+
+function imageResponse(r: Response): Response {
   const headers = new Headers();
   const ct = r.headers.get("content-type");
   if (ct) headers.set("content-type", ct);
@@ -246,10 +257,29 @@ async function proxyAsset(upstream: string): Promise<Response> {
   return new Response(r.body, { status: 200, headers });
 }
 
-// Face parts etc.: /team-photo/Img/Avatar/… → www.hattrick.org/Img/Avatar/…
-app.get(`${BASE}/Img/Avatar/*`, (c) => {
+// Same-origin proxy for Hattrick avatar assets. The team-photo render draws the
+// player's face parts and reads their kit data; serving them from this origin
+// keeps the export canvas untainted and avoids vendoring per-player PNGs. Only
+// these two upstream origins and prefixes are proxied (not an open proxy).
+async function proxyAsset(upstream: string): Promise<Response> {
+  const r = await fetchUpstream(upstream);
+  if (!r.ok) return new Response(`upstream asset error ${r.status}`, { status: r.status });
+  return imageResponse(r);
+}
+
+// Face parts: /team-photo/Img/Avatar/… → www.hattrick.org/Img/Avatar/…
+// A failed layer must not blank the whole face (the renderer aborts the face if
+// any part errors), so fall back to a transparent pixel on upstream failure.
+app.get(`${BASE}/Img/Avatar/*`, async (c) => {
   const path = new URL(c.req.url).pathname.slice(BASE.length); // "/Img/Avatar/…"
-  return proxyAsset(`https://www.hattrick.org${path}`);
+  const r = await fetchUpstream(`https://www.hattrick.org${path}`);
+  if (!r.ok) {
+    return new Response(TRANSPARENT_PNG, {
+      status: 200,
+      headers: { "content-type": "image/png", "cache-control": "no-store" },
+    });
+  }
+  return imageResponse(r);
 });
 // Kit data: /team-photo/_kit/… → res.hattrick.org/…
 app.get(`${BASE}/_kit/*`, (c) => {

@@ -98,6 +98,26 @@ describe("worker asset proxy", () => {
     }
   });
 
+  it("falls back to a transparent PNG when a face part fails upstream", async () => {
+    const orig = globalThis.fetch;
+    let calls = 0;
+    globalThis.fetch = (async () => {
+      calls++;
+      return new Response("upstream down", { status: 503 });
+    }) as typeof fetch;
+    try {
+      const res = await app.request("/team-photo/Img/Avatar/beards/f3b3b.png", {}, env);
+      // A failed layer must not blank the face: serve a transparent pixel, 200.
+      expect(res.status).toBe(200);
+      expect(res.headers.get("content-type")).toBe("image/png");
+      expect((await res.arrayBuffer()).byteLength).toBeGreaterThan(0);
+      // Retried once on the 5xx before giving up.
+      expect(calls).toBe(2);
+    } finally {
+      globalThis.fetch = orig;
+    }
+  });
+
   it("proxies kit data to res.hattrick.org, stripping the /_kit prefix", async () => {
     const orig = globalThis.fetch;
     let seen = "";
