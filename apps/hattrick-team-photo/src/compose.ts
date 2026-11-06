@@ -20,10 +20,18 @@ export interface PhotoMeta {
   bgColor?: string | null;
   /** Font family for the team-name header. */
   headerFont?: string;
+  /** Font weight for the team-name header (default 700). */
+  headerWeight?: number;
+  /** Italic for the team-name header. */
+  headerItalic?: boolean;
   /** Colour for the team-name header. */
   headerColor?: string;
   /** Font family for the player names. */
   namesFont?: string;
+  /** Font weight for the player names (default 500). */
+  namesWeight?: number;
+  /** Italic for the player names. */
+  namesItalic?: boolean;
   /** Colour for the player names. */
   namesColor?: string;
 }
@@ -76,8 +84,10 @@ export function composeTeamPhoto(
   const hasHeader = Boolean((meta.teamName && meta.teamName.trim()) || hasCrest);
   const members = meta.members ?? [];
 
-  const headerFontStr = `700 ${HEADER_SIZE}px "${meta.headerFont || DEFAULT_HEADER_FONT}", Verdana, sans-serif`;
-  const namesFontStr = `500 ${FOOTER_SIZE}px "${meta.namesFont || DEFAULT_NAMES_FONT}", Verdana, sans-serif`;
+  const hi = meta.headerItalic ? "italic " : "";
+  const ni = meta.namesItalic ? "italic " : "";
+  const headerFontStr = `${hi}${meta.headerWeight ?? 700} ${HEADER_SIZE}px "${meta.headerFont || DEFAULT_HEADER_FONT}", Verdana, sans-serif`;
+  const namesFontStr = `${ni}${meta.namesWeight ?? 500} ${FOOTER_SIZE}px "${meta.namesFont || DEFAULT_NAMES_FONT}", Verdana, sans-serif`;
   const headerColor = meta.headerColor || "#ffffff";
   const namesColor = meta.namesColor || "#ffffff";
 

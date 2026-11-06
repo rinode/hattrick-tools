@@ -102,10 +102,61 @@ function syncReadouts(): void {
 // --- Fonts -------------------------------------------------------------------
 // The two font pickers draw from the full Google Fonts library, fetched once at
 // runtime, plus the bundled Rosetta and any uploaded fonts. Each picked Google
-// font is loaded on demand; Rosetta (CSS) and uploads are already available.
+// font variant is loaded on demand; Rosetta (CSS) and uploads are already
+// available. The style dropdown beside each picker is built from the selected
+// font's own variants.
 let allFonts: string[] = [];
-const loadedGoogle = new Set<string>();
+const fontVariants = new Map<string, string[]>(); // family -> ["regular","700italic",...]
+const loadedVariants = new Set<string>(); // "family|weight|italic" already requested
 const customFonts = new Set<string>();
+
+interface FontStyle {
+  weight: number;
+  italic: boolean;
+  label: string;
+  value: string;
+}
+
+const WEIGHT_NAMES: Record<number, string> = {
+  100: "Thin", 200: "ExtraLight", 300: "Light", 400: "Regular",
+  500: "Medium", 600: "SemiBold", 700: "Bold", 800: "ExtraBold", 900: "Black",
+};
+
+function styleLabel(weight: number, italic: boolean): string {
+  const base = WEIGHT_NAMES[weight] ?? String(weight);
+  if (!italic) return base;
+  return base === "Regular" ? "Italic" : `${base} Italic`;
+}
+
+/** Parses a Google variant token ("regular","italic","700","700italic"). */
+function parseVariant(v: string): { weight: number; italic: boolean } {
+  const italic = v.endsWith("italic");
+  const w = v.replace("italic", "");
+  const weight = w === "" || w === "regular" ? 400 : Number(w) || 400;
+  return { weight, italic };
+}
+
+/** The selectable styles for a family, taken from its own variants. */
+function variantsFor(family: string): FontStyle[] {
+  // Rosetta and uploaded fonts are a single face.
+  if (family === "Rosetta" || customFonts.has(family)) {
+    return [{ weight: 400, italic: false, label: "Regular", value: "400:0" }];
+  }
+  const raw = fontVariants.get(family);
+  // When variants are unknown (fetch blocked), offer a sensible common set.
+  const tokens = raw && raw.length ? raw : ["regular", "italic", "700", "700italic"];
+  const seen = new Set<string>();
+  const out: FontStyle[] = [];
+  for (const v of tokens) {
+    const { weight, italic } = parseVariant(v);
+    const value = `${weight}:${italic ? 1 : 0}`;
+    if (seen.has(value)) continue;
+    seen.add(value);
+    out.push({ weight, italic, label: styleLabel(weight, italic), value });
+  }
+  out.sort((a, b) => a.weight - b.weight || Number(a.italic) - Number(b.italic));
+  return out;
+}
 
 // Always-present families (Rosetta and Roboto ship with the theme) plus a solid
 // set of popular Google fonts, used as the list when the live fetch is blocked.
@@ -124,12 +175,32 @@ const FALLBACK_FONTS = [
   "Audiowide", "Press Start 2P", "VT323",
 ];
 
-/** Loads the full family list once; falls back to the bundled set if blocked. */
+/** Loads the full family list (and each font's variants) once; falls back to
+ *  the bundled set if the fetch is blocked. Handles both the webfonts-API shape
+ *  ({items:[{family,variants}]}) and a family-keyed object. */
 async function loadFontList(): Promise<void> {
-  let families: string[] = [];
+  const families: string[] = [];
   try {
     const res = await fetch("https://cdn.jsdelivr.net/npm/google-fonts-complete@1.3.0/api-response.json");
-    if (res.ok) families = Object.keys((await res.json()) as Record<string, unknown>);
+    if (res.ok) {
+      const data = (await res.json()) as {
+        items?: { family?: string; variants?: string[] }[];
+      } & Record<string, unknown>;
+      if (Array.isArray(data.items)) {
+        for (const it of data.items) {
+          if (!it?.family) continue;
+          families.push(it.family);
+          if (Array.isArray(it.variants)) fontVariants.set(it.family, it.variants);
+        }
+      } else {
+        for (const [family, info] of Object.entries(data)) {
+          if (family === "kind") continue;
+          families.push(family);
+          const v = (info as { variants?: unknown }).variants;
+          if (Array.isArray(v)) fontVariants.set(family, v as string[]);
+        }
+      }
+    }
   } catch {
     /* offline or blocked; the fallback set is used */
   }
@@ -137,24 +208,71 @@ async function loadFontList(): Promise<void> {
   allFonts = [...set].sort((a, b) => a.localeCompare(b));
 }
 
-/** Ensures a family is loaded so the canvas can draw with it. */
-async function ensureFont(family: string): Promise<void> {
+/** Google css2 family token: spaces become plus signs. */
+function gfName(family: string): string {
+  return family.replace(/ /g, "+");
+}
+
+/** Ensures one variant of a family is loaded so the canvas can draw with it. */
+async function ensureVariant(family: string, weight: number, italic: boolean): Promise<void> {
   if (!family || family === "Rosetta" || customFonts.has(family)) return;
-  if (!loadedGoogle.has(family)) {
-    loadedGoogle.add(family);
+  const key = `${family}|${weight}|${italic ? 1 : 0}`;
+  if (!loadedVariants.has(key)) {
+    loadedVariants.add(key);
     const link = document.createElement("link");
     link.rel = "stylesheet";
-    link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}:wght@400;500;700&display=swap`;
+    link.href = `https://fonts.googleapis.com/css2?family=${gfName(family)}:ital,wght@${italic ? 1 : 0},${weight}&display=swap`;
     document.head.appendChild(link);
   }
   try {
-    await Promise.all([
-      document.fonts.load(`700 52px "${family}"`),
-      document.fonts.load(`500 15px "${family}"`),
-    ]);
+    await document.fonts.load(`${italic ? "italic " : ""}${weight} 32px "${family}"`);
   } catch {
     /* fall back to the default font if it cannot load */
   }
+}
+
+// Preview fonts loaded for the dropdown (regular weight only), kept separate
+// from the picked variants so the list can show each name in its own font.
+const previewLoaded = new Set<string>();
+function ensurePreview(family: string): void {
+  if (family === "Rosetta" || customFonts.has(family) || previewLoaded.has(family)) return;
+  previewLoaded.add(family);
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = `https://fonts.googleapis.com/css2?family=${gfName(family)}&display=swap`;
+  document.head.appendChild(link);
+}
+
+/** Reads the {weight, italic} currently chosen in a style <select>. */
+function styleOf(selectId: string): { weight: number; italic: boolean } {
+  const [w, i] = el<HTMLSelectElement>(selectId).value.split(":");
+  return { weight: Number(w) || 400, italic: i === "1" };
+}
+
+/** Fills a style <select> from a family's variants; keeps the current choice if
+ *  still valid, else defaults (header prefers bold, names prefer regular). */
+function fillStyleSelect(selectId: string, family: string, role: "header" | "names"): void {
+  const sel = el<HTMLSelectElement>(selectId);
+  const prev = sel.value;
+  const vs = variantsFor(family);
+  sel.replaceChildren();
+  for (const v of vs) {
+    const o = document.createElement("option");
+    o.value = v.value;
+    o.textContent = v.label;
+    sel.appendChild(o);
+  }
+  if (vs.some((v) => v.value === prev)) {
+    sel.value = prev;
+    return;
+  }
+  const want =
+    role === "header"
+      ? vs.find((v) => v.weight === 700 && !v.italic) ??
+        [...vs].reverse().find((v) => !v.italic && v.weight <= 700) ??
+        vs[0]
+      : vs.find((v) => v.weight === 400 && !v.italic) ?? vs.find((v) => !v.italic) ?? vs[0];
+  if (want) sel.value = want.value;
 }
 
 /** Turns a font input into a searchable dropdown over the family list. */
@@ -164,7 +282,22 @@ function setupFontCombo(inputId: string, onPick: (family: string) => void): void
   let shown: string[] = [];
   let active = -1;
 
+  // Each item previews in its own font; the font loads only once the item
+  // scrolls into view, so opening the list doesn't fetch hundreds of fonts.
+  const io = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        const name = (entry.target as HTMLElement).dataset.font!;
+        ensurePreview(name);
+        io.unobserve(entry.target);
+      }
+    },
+    { root: list },
+  );
+
   function render(): void {
+    io.disconnect();
     const f = input.value.trim().toLowerCase();
     shown = (f ? allFonts.filter((n) => n.toLowerCase().includes(f)) : allFonts).slice(0, 300);
     list.replaceChildren();
@@ -178,11 +311,14 @@ function setupFontCombo(inputId: string, onPick: (family: string) => void): void
         const d = document.createElement("div");
         d.className = "combo-item";
         d.textContent = name;
+        d.dataset.font = name;
+        d.style.fontFamily = `"${name}", Verdana, sans-serif`;
         d.addEventListener("mousedown", (ev) => {
           ev.preventDefault();
           choose(name);
         });
         list.appendChild(d);
+        io.observe(d);
       });
     }
     active = -1;
@@ -191,6 +327,8 @@ function setupFontCombo(inputId: string, onPick: (family: string) => void): void
 
   function choose(name: string): void {
     input.value = name;
+    input.style.fontFamily = `"${name}", Verdana, sans-serif`;
+    ensurePreview(name);
     list.hidden = true;
     onPick(name);
   }
@@ -308,8 +446,12 @@ function recompose(): void {
     members: checked("showNames") ? members : [],
     bgColor: bgFill(),
     headerFont: el<HTMLInputElement>("headerFont").value || undefined,
+    headerWeight: styleOf("headerStyle").weight,
+    headerItalic: styleOf("headerStyle").italic,
     headerColor: el<HTMLInputElement>("headerColor").value,
     namesFont: el<HTMLInputElement>("namesFont").value || undefined,
+    namesWeight: styleOf("namesStyle").weight,
+    namesItalic: styleOf("namesStyle").italic,
     namesColor: el<HTMLInputElement>("namesColor").value,
   };
   const floor = checked("showStairs") ? stairs : null;
@@ -475,9 +617,29 @@ el<HTMLInputElement>("bgAlpha").addEventListener("input", () => {
 el<HTMLInputElement>("headerColor").addEventListener("input", () => recompose());
 el<HTMLInputElement>("namesColor").addEventListener("input", () => recompose());
 
-// Font pickers: load the chosen family, then recompose.
-setupFontCombo("headerFont", (f) => void ensureFont(f).then(() => recompose()));
-setupFontCombo("namesFont", (f) => void ensureFont(f).then(() => recompose()));
+// When a family is picked: rebuild its style list, load the chosen variant,
+// then recompose.
+function pickFont(inputId: string, styleId: string, role: "header" | "names"): (f: string) => void {
+  return (family) => {
+    fillStyleSelect(styleId, family, role);
+    const s = styleOf(styleId);
+    void ensureVariant(family, s.weight, s.italic).then(() => recompose());
+  };
+}
+setupFontCombo("headerFont", pickFont("headerFont", "headerStyle", "header"));
+setupFontCombo("namesFont", pickFont("namesFont", "namesStyle", "names"));
+
+// Style dropdowns: load the chosen variant, then recompose.
+function onStyleChange(inputId: string, styleId: string): void {
+  const s = styleOf(styleId);
+  void ensureVariant(el<HTMLInputElement>(inputId).value, s.weight, s.italic).then(() => recompose());
+}
+el<HTMLSelectElement>("headerStyle").addEventListener("change", () =>
+  onStyleChange("headerFont", "headerStyle"),
+);
+el<HTMLSelectElement>("namesStyle").addEventListener("change", () =>
+  onStyleChange("namesFont", "namesStyle"),
+);
 
 // Upload a custom font: register it and make it selectable in both pickers.
 el<HTMLInputElement>("fontUpload").addEventListener("change", async (event) => {
@@ -490,15 +652,21 @@ el<HTMLInputElement>("fontUpload").addEventListener("change", async (event) => {
     document.fonts.add(face);
     customFonts.add(family);
     if (!allFonts.includes(family)) allFonts.unshift(family);
-    recompose();
   } catch (err) {
     console.error("font upload", err);
   }
 });
 
-// Fetch the family list, then redraw once the default fonts are ready so the
-// first photo uses Rosetta/Roboto rather than a fallback.
-void loadFontList();
+// Build the initial style lists from the defaults, then fetch the full family
+// list and refresh. Redraw once the default fonts are ready.
+el<HTMLInputElement>("headerFont").style.fontFamily = '"Rosetta", Verdana, sans-serif';
+el<HTMLInputElement>("namesFont").style.fontFamily = '"Roboto", Verdana, sans-serif';
+fillStyleSelect("headerStyle", el<HTMLInputElement>("headerFont").value, "header");
+fillStyleSelect("namesStyle", el<HTMLInputElement>("namesFont").value, "names");
+void loadFontList().then(() => {
+  fillStyleSelect("headerStyle", el<HTMLInputElement>("headerFont").value, "header");
+  fillStyleSelect("namesStyle", el<HTMLInputElement>("namesFont").value, "names");
+});
 document.fonts.ready.then(() => {
   if (composed) recompose();
 });

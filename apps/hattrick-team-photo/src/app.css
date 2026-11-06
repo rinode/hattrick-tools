@@ -188,6 +188,11 @@ main {
   flex: none;
 }
 
+/* Per-font style dropdown, sitting under its font input. */
+.font-style {
+  margin-top: 6px;
+}
+
 .slider-val {
   min-width: 36px;
   text-align: right;
