@@ -97,6 +97,8 @@ function bgFill(): string {
 function syncReadouts(): void {
   el("rowsVal").textContent = el<HTMLInputElement>("rows").value;
   el("bgAlphaVal").textContent = `${el<HTMLInputElement>("bgAlpha").value}%`;
+  el("headerSizeVal").textContent = el<HTMLInputElement>("headerSize").value;
+  el("namesSizeVal").textContent = el<HTMLInputElement>("namesSize").value;
 }
 
 // --- Fonts -------------------------------------------------------------------
@@ -448,10 +450,12 @@ function recompose(): void {
     headerFont: el<HTMLInputElement>("headerFont").value || undefined,
     headerWeight: styleOf("headerStyle").weight,
     headerItalic: styleOf("headerStyle").italic,
+    headerSize: Number(el<HTMLInputElement>("headerSize").value),
     headerColor: el<HTMLInputElement>("headerColor").value,
     namesFont: el<HTMLInputElement>("namesFont").value || undefined,
     namesWeight: styleOf("namesStyle").weight,
     namesItalic: styleOf("namesStyle").italic,
+    namesSize: Number(el<HTMLInputElement>("namesSize").value),
     namesColor: el<HTMLInputElement>("namesColor").value,
   };
   const floor = checked("showStairs") ? stairs : null;
@@ -616,6 +620,14 @@ el<HTMLInputElement>("bgAlpha").addEventListener("input", () => {
 // Text colour pickers.
 el<HTMLInputElement>("headerColor").addEventListener("input", () => recompose());
 el<HTMLInputElement>("namesColor").addEventListener("input", () => recompose());
+
+// Font size sliders.
+for (const id of ["headerSize", "namesSize"]) {
+  el<HTMLInputElement>(id).addEventListener("input", () => {
+    syncReadouts();
+    recompose();
+  });
+}
 
 // When a family is picked: rebuild its style list, load the chosen variant,
 // then recompose.
