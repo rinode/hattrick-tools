@@ -82,6 +82,19 @@ main {
   cursor: default;
 }
 
+/* Per-row role select (kit group). Compact, sits before the move buttons. */
+.squad-item .role {
+  width: auto;
+  height: 26px;
+  margin: 0;
+  padding: 0 4px;
+  font-size: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
 #stage {
   overflow: auto;
   background: var(--panel);
@@ -191,6 +204,22 @@ main {
 /* Per-font style dropdown, sitting under its font input. */
 .font-style {
   margin-top: 6px;
+}
+
+/* List of uploaded custom fonts, each shown in its own font. */
+.uploaded-list {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.uploaded-item {
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .slider-val {

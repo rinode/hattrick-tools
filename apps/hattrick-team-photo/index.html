@@ -23,6 +23,12 @@
 
             <label>Squad <span id="teamName" class="team-name"></span></label>
             <div id="squad" class="squad"></div>
+
+            <div class="check">
+              <input id="includeStaff" type="checkbox" /><label for="includeStaff" style="margin: 0"
+                >Include staff</label
+              >
+            </div>
           </div>
         </details>
 
@@ -37,6 +43,12 @@
 
             <label for="stairH">Row height</label>
             <input id="stairH" type="range" min="20" max="90" step="1" value="25" />
+
+            <label for="stairTop">Step top colour</label>
+            <input id="stairTop" type="color" value="#d3d3d3" class="swatch" />
+
+            <label for="stairFront">Step front colour</label>
+            <input id="stairFront" type="color" value="#dccece" class="swatch" />
 
             <div class="check">
               <input id="stagger" type="checkbox" checked /><label for="stagger" style="margin: 0"
@@ -122,8 +134,9 @@
               <span id="namesSizeVal" class="slider-val">15</span>
             </div>
 
-            <label for="fontUpload">Upload a font</label>
-            <input id="fontUpload" type="file" accept=".ttf,.otf,.woff,.woff2" />
+            <label for="fontUpload">Upload fonts</label>
+            <input id="fontUpload" type="file" accept=".ttf,.otf,.woff,.woff2" multiple />
+            <div id="uploadedFonts" class="uploaded-list"></div>
           </div>
         </details>
 
@@ -142,6 +155,38 @@
             <label for="bgFile">Image</label>
             <input id="bgFile" type="file" accept="image/*" />
             <button id="bgClear" type="button" class="secondary">Remove image</button>
+          </div>
+        </details>
+
+        <details class="section" open>
+          <summary>Kits</summary>
+          <div class="section-body">
+            <label for="playersKit">Players kit</label>
+            <select id="playersKit" class="font-style">
+              <option value="home" selected>Home</option>
+              <option value="away">Away</option>
+              <option value="default">Hattrick default</option>
+              <option value="blank">Blank</option>
+            </select>
+
+            <label for="keepersKit">Keepers kit</label>
+            <select id="keepersKit" class="font-style">
+              <option value="home">Home</option>
+              <option value="away" selected>Away</option>
+              <option value="default">Hattrick default</option>
+              <option value="blank">Blank</option>
+            </select>
+
+            <label for="staffKit">Staff kit</label>
+            <select id="staffKit" class="font-style">
+              <option value="home">Home</option>
+              <option value="away">Away</option>
+              <option value="default">Hattrick default</option>
+              <option value="blank" selected>Blank</option>
+            </select>
+
+            <label for="kitUpload">Upload kits</label>
+            <input id="kitUpload" type="file" accept=".json,application/json" multiple />
           </div>
         </details>
 

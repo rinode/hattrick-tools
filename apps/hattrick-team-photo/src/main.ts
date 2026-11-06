@@ -23,14 +23,24 @@ interface SquadPlayer {
   name: string;
   number: number;
   gender: number;
+  keeper: boolean;
   avatar: PlayerAvatar | null;
 }
+
+// Which kit group a figure draws from. Defaults from CHPP (outfield / detected
+// keeper / hired staff) but can be changed per row, so e.g. staff can wear the
+// player kit.
+type Role = "player" | "keeper" | "staff";
 
 interface SquadItem {
   id: number;
   number: number;
   name: string;
   enabled: boolean;
+  // Origin flag: a hired staff member (vs a squad player). Drives the default
+  // role and whether the include-staff box shows them. Not the kit group.
+  staff: boolean;
+  role: Role;
   inputs: RenderInputs;
 }
 
@@ -41,9 +51,17 @@ const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 const API_BASE = (import.meta.env.VITE_API_BASE ?? BASE).replace(/\/$/, "");
 
 let squad: SquadItem[] = [];
-// Each figure is rendered once and reused; toggling, reordering, layout and
-// background changes only recompose, which is instant.
-const figureCache = new Map<number, RenderOutput | null>();
+let playerItems: SquadItem[] = [];
+let staffItems: SquadItem[] = [];
+// Each figure is rendered once per kit and reused; toggling, reordering, layout
+// and background changes only recompose. The key is `${id}|${kit}` so switching
+// a group's kit re-renders under a new key and caches it.
+const figureCache = new Map<string, RenderOutput | null>();
+// Uploaded kits: display name -> object URL of the kitData.json.
+const customKits = new Map<string, string>();
+// The team's home/away kit (proxied kitData.json paths), set on roster load.
+let homeKit: string | null = null;
+let awayKit: string | null = null;
 let background: HTMLImageElement | null = null;
 let crest: HTMLImageElement | null = null;
 let teamName = "";
@@ -62,9 +80,12 @@ function frontHeight(): number {
   return Number(el<HTMLInputElement>("stairH").value) || DEFAULT_FRONT;
 }
 
-/** Rebuilds the stair tile at the current front-face height. onload recomposes. */
+/** Rebuilds the stair tile at the current front height and colours. onload recomposes. */
 function updateStairs(): void {
-  stairImg.src = stairTileUrl(frontHeight());
+  stairImg.src = stairTileUrl(frontHeight(), {
+    top: el<HTMLInputElement>("stairTop").value,
+    front: el<HTMLInputElement>("stairFront").value,
+  });
 }
 updateStairs();
 
@@ -362,12 +383,41 @@ function setupFontCombo(inputId: string, onPick: (family: string) => void): void
   });
 }
 
-function avatarInputs(player: SquadPlayer): RenderInputs {
-  const inputs = renderInputsFromAvatar(player.avatar!, { gender: player.gender });
+function avatarInputs(avatar: PlayerAvatar, gender: number): RenderInputs {
+  const inputs = renderInputsFromAvatar(avatar, { gender });
   // Route the remote kit data through the worker's same-origin proxy. Face
   // parts (/Img/Avatar/…) are already same-origin via assetOrigin.
   inputs.kitJson = inputs.kitJson.replace(/^(?:https?:)?\/\/res\.hattrick\.org\//, "/_kit/");
   return inputs;
+}
+
+// --- Kit override ------------------------------------------------------------
+// Each role (player, keeper, staff) picks a kit: home, away, the Hattrick
+// default, a blank plain kit, or an uploaded one.
+function kitChoice(item: SquadItem): string {
+  const sel = item.role === "keeper" ? "keepersKit" : item.role === "staff" ? "staffKit" : "playersKit";
+  return el<HTMLSelectElement>(sel).value;
+}
+
+/** The kit URL to force for a choice, or null to keep each figure's own kit. */
+function kitUrlFor(choice: string): string | null {
+  if (choice === "home") return homeKit;
+  if (choice === "away") return awayKit;
+  if (choice === "default") return "/default-kit.json";
+  if (choice === "blank") return "/blank-kit.json";
+  if (choice.startsWith("upload:")) return customKits.get(choice.slice(7)) ?? null;
+  return null; // no override: keep the figure's own kit
+}
+
+/** Cache key for a figure under the current kit choice for its group. */
+function figureKey(item: SquadItem): string {
+  return `${item.id}|${kitUrlFor(kitChoice(item)) ?? "own"}`;
+}
+
+/** The render inputs for a figure with its group's kit override applied. */
+function inputsFor(item: SquadItem): RenderInputs {
+  const override = kitUrlFor(kitChoice(item));
+  return override ? { ...item.inputs, kitJson: override } : item.inputs;
 }
 
 /** Renders every figure once into the cache. Expensive; run on load. */
@@ -393,13 +443,14 @@ async function renderFigures(): Promise<void> {
   let done = 0;
   for (const item of squad) {
     count.textContent = `${done + 1}/${squad.length}`;
-    if (!figureCache.has(item.id)) {
+    const key = figureKey(item);
+    if (!figureCache.has(key)) {
       const holder = document.createElement("div");
       temp.appendChild(holder);
       try {
         figureCache.set(
-          item.id,
-          await renderInputs(item.inputs, holder, {
+          key,
+          await renderInputs(inputsFor(item), holder, {
             assetOrigin: location.origin + BASE,
             slimKitUrl: `${BASE}/Club/Players/Avatars/slimkitrender.js`,
             fullBodiesUrl: `${BASE}/Club/Players/Avatars/HT.FullBodies.js`,
@@ -407,7 +458,7 @@ async function renderFigures(): Promise<void> {
         );
       } catch (err) {
         console.error(`figure ${item.id}`, err);
-        figureCache.set(item.id, null);
+        figureCache.set(key, null);
       }
     }
     done++;
@@ -434,7 +485,7 @@ function recompose(): void {
   const widths: number[] = [];
   const members: { number: number; name: string }[] = [];
   for (const item of enabled) {
-    const c = figureCache.get(item.id);
+    const c = figureCache.get(figureKey(item));
     if (!c) continue;
     const { w, h } = naturalSize(c);
     rendered.push(c);
@@ -492,6 +543,27 @@ function renderSquadList(): void {
     name.className = "name";
     name.textContent = item.number ? `${item.number}. ${item.name}` : item.name;
 
+    // Role picks the kit group (player / keeper / staff). Auto-set from CHPP,
+    // changeable per row: a staff member can be set to the player kit, etc.
+    const role = document.createElement("select");
+    role.className = "role";
+    role.title = "Kit group";
+    for (const [value, text] of [
+      ["player", "Player"],
+      ["keeper", "Goalkeeper"],
+      ["staff", "Staff"],
+    ] as const) {
+      const o = document.createElement("option");
+      o.value = value;
+      o.textContent = text;
+      role.appendChild(o);
+    }
+    role.value = item.role;
+    role.addEventListener("change", () => {
+      item.role = role.value as Role;
+      void refreshFigures();
+    });
+
     const up = document.createElement("button");
     up.type = "button";
     up.className = "mv";
@@ -506,7 +578,7 @@ function renderSquadList(): void {
     down.disabled = i === squad.length - 1;
     down.addEventListener("click", () => move(i, 1));
 
-    row.append(check, name, up, down);
+    row.append(check, name, role, up, down);
     list.appendChild(row);
   });
 }
@@ -541,9 +613,14 @@ async function loadRoster(teamId?: number): Promise<void> {
   const data = (await res.json()) as {
     teamName: string;
     crest: string | null;
+    homeKit: string | null;
+    awayKit: string | null;
     players: SquadPlayer[];
+    staff?: { id: number; name: string; avatar: PlayerAvatar | null }[];
   };
-  squad = data.players
+  homeKit = data.homeKit;
+  awayKit = data.awayKit;
+  playerItems = data.players
     .filter((p) => p.avatar)
     .map((p) => {
       // Hattrick returns 100 for a player with no shirt number; treat as none.
@@ -553,12 +630,31 @@ async function loadRoster(teamId?: number): Promise<void> {
         number,
         name: p.name || (number ? `#${number}` : "Unnamed"),
         enabled: true,
-        inputs: avatarInputs(p),
+        staff: false,
+        role: (p.keeper ? "keeper" : "player") as Role,
+        inputs: avatarInputs(p.avatar!, p.gender),
       };
     });
+  staffItems = (data.staff ?? [])
+    .filter((s) => s.avatar)
+    .map((s) => ({
+      id: s.id,
+      number: 0,
+      name: s.name || "Staff",
+      enabled: true,
+      staff: true,
+      role: "staff" as Role,
+      inputs: avatarInputs(s.avatar!, 1),
+    }));
+  applyStaffInclusion();
   teamName = data.teamName;
   crest = await loadImage(data.crest);
   await showSquad(data.teamName);
+}
+
+/** Sets `squad` to players, plus staff when the include-staff box is checked. */
+function applyStaffInclusion(): void {
+  squad = checked("includeStaff") ? [...playerItems, ...staffItems] : [...playerItems];
 }
 
 /** Populates the team picker when the user owns more than one team. */
@@ -589,17 +685,64 @@ async function loadTeams(): Promise<void> {
 
 /** A randomly generated 22-player demo with the default kit (no connection). */
 async function loadDemo(): Promise<void> {
-  squad = Array.from({ length: 22 }, (_, i) => ({
+  homeKit = null;
+  awayKit = null;
+  playerItems = Array.from({ length: 22 }, (_, i) => ({
     id: i + 1,
     number: i + 1,
     name: `Player ${i + 1}`,
     enabled: true,
+    staff: false,
+    role: (i === 0 ? "keeper" : "player") as Role,
     inputs: randomRenderInputs(),
   }));
+  staffItems = [];
+  applyStaffInclusion();
   teamName = "Demo FC";
   crest = null;
   await showSquad("demo");
 }
+
+// Re-renders figures under the current kit choices, then recomposes. Used when
+// a kit choice or staff inclusion changes (which need new renders, not just a
+// recompose). Cached renders for unchanged keys are reused.
+async function refreshFigures(): Promise<void> {
+  const r = el<HTMLInputElement>("rows");
+  r.max = String(Math.max(1, squad.length));
+  if (Number(r.value) > squad.length) r.value = r.max;
+  syncReadouts();
+  renderSquadList();
+  await renderFigures();
+  recompose();
+}
+
+el<HTMLInputElement>("includeStaff").addEventListener("change", () => {
+  applyStaffInclusion();
+  void refreshFigures();
+});
+el<HTMLSelectElement>("playersKit").addEventListener("change", () => void refreshFigures());
+el<HTMLSelectElement>("keepersKit").addEventListener("change", () => void refreshFigures());
+el<HTMLSelectElement>("staffKit").addEventListener("change", () => void refreshFigures());
+
+// Upload custom kits (kitData.json); each becomes selectable in both kit pickers.
+el<HTMLInputElement>("kitUpload").addEventListener("change", (event) => {
+  const input = event.target as HTMLInputElement;
+  for (const file of Array.from(input.files ?? [])) {
+    const name = file.name.replace(/\.json$/i, "").trim() || "Custom kit";
+    customKits.set(name, URL.createObjectURL(file));
+    for (const selId of ["playersKit", "keepersKit", "staffKit"]) {
+      const sel = el<HTMLSelectElement>(selId);
+      const value = `upload:${name}`;
+      if (![...sel.options].some((o) => o.value === value)) {
+        const o = document.createElement("option");
+        o.value = value;
+        o.textContent = `Uploaded: ${name}`;
+        sel.appendChild(o);
+      }
+    }
+  }
+  input.value = "";
+});
 
 // Layout and label controls only affect composition, so they recompose instantly.
 for (const id of ["rows", "stagger", "showName", "showCrest", "showNames", "showStairs", "crestShadow"]) {
@@ -653,19 +796,31 @@ el<HTMLSelectElement>("namesStyle").addEventListener("change", () =>
   onStyleChange("namesFont", "namesStyle"),
 );
 
-// Upload a custom font: register it and make it selectable in both pickers.
+// Upload custom fonts: register each and make it selectable in both pickers.
+// Multiple files can be added, and more uploaded later; all are kept.
 el<HTMLInputElement>("fontUpload").addEventListener("change", async (event) => {
-  const file = (event.target as HTMLInputElement).files?.[0];
-  if (!file) return;
-  const family = file.name.replace(/\.(ttf|otf|woff2?)$/i, "").trim() || "Custom font";
-  try {
-    const face = new FontFace(family, await file.arrayBuffer());
-    await face.load();
-    document.fonts.add(face);
-    customFonts.add(family);
-    if (!allFonts.includes(family)) allFonts.unshift(family);
-  } catch (err) {
-    console.error("font upload", err);
+  const input = event.target as HTMLInputElement;
+  for (const file of Array.from(input.files ?? [])) {
+    const family = file.name.replace(/\.(ttf|otf|woff2?)$/i, "").trim() || "Custom font";
+    try {
+      const face = new FontFace(family, await file.arrayBuffer());
+      await face.load();
+      document.fonts.add(face);
+      customFonts.add(family);
+      if (!allFonts.includes(family)) allFonts.unshift(family);
+    } catch (err) {
+      console.error("font upload", err);
+    }
+  }
+  input.value = ""; // allow re-uploading the same file name later
+  const list = el("uploadedFonts");
+  list.replaceChildren();
+  for (const name of customFonts) {
+    const row = document.createElement("div");
+    row.className = "uploaded-item";
+    row.textContent = name;
+    row.style.fontFamily = `"${name}", Verdana, sans-serif`;
+    list.appendChild(row);
   }
 });
 
@@ -683,9 +838,11 @@ document.fonts.ready.then(() => {
   if (composed) recompose();
 });
 
-// The front face drives the stair tile and the row spacing; regenerate the tile
-// (its onload recomposes with the new rowRise).
-el<HTMLInputElement>("stairH").addEventListener("input", () => updateStairs());
+// The front face drives the stair tile and the row spacing; the two colours
+// restyle it. Any of them regenerates the tile (its onload recomposes).
+for (const id of ["stairH", "stairTop", "stairFront"]) {
+  el<HTMLInputElement>(id).addEventListener("input", () => updateStairs());
+}
 
 el<HTMLInputElement>("bgFile").addEventListener("change", (event) => {
   const file = (event.target as HTMLInputElement).files?.[0];

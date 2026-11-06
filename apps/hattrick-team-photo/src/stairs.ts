@@ -38,8 +38,18 @@ const SHADOW = 12;
 // step's front face reads about the same height, front row included.
 const OVERLAP = 6;
 
-/** Builds a stair style for a given front/side face height. */
-export function stairStyle(frontHeight: number = DEFAULT_FRONT): StairStyle {
+export const DEFAULT_TOP_COLOR = "#d3d3d3";
+export const DEFAULT_FRONT_COLOR = "#dccece";
+
+export interface StairColors {
+  top?: string;
+  front?: string;
+}
+
+/** Builds a stair style for a given front/side face height and colours. */
+export function stairStyle(frontHeight: number = DEFAULT_FRONT, colors: StairColors = {}): StairStyle {
+  const top = colors.top || DEFAULT_TOP_COLOR;
+  const front = colors.front || DEFAULT_FRONT_COLOR;
   return {
     tileWidth: 128,
     tileHeight: EDGE + TOP + EDGE + SHADOW + frontHeight + EDGE,
@@ -48,10 +58,20 @@ export function stairStyle(frontHeight: number = DEFAULT_FRONT): StairStyle {
     shadowHeight: SHADOW,
     frontHeight,
     edge: "#0d0805",
-    top: "#d3d3d3",
-    shadow: "#bfabac",
-    front: "#dccece",
+    top,
+    // The cast shadow is the front colour a touch darker so it still reads.
+    shadow: shade(front, 0.82),
+    front,
   };
+}
+
+/** Multiplies a #rrggbb colour's channels by `f` (clamped). */
+function shade(hex: string, f: number): string {
+  const m = /^#?([0-9a-fA-F]{6})$/.exec(hex);
+  if (!m) return hex;
+  const n = parseInt(m[1]!, 16);
+  const c = [n >> 16, (n >> 8) & 255, n & 255].map((v) => Math.max(0, Math.min(255, Math.round(v * f))));
+  return `#${c.map((v) => v.toString(16).padStart(2, "0")).join("")}`;
 }
 
 /** Row spacing for a front height: the tile height less the overlap, so steps overlap. */
@@ -80,9 +100,9 @@ export function stairTileSvg(s: StairStyle = STAIR_STYLE): string {
   );
 }
 
-/** The stair tile for a given front height, as a data URL ready to load into an Image. */
-export function stairTileUrl(frontHeight: number = DEFAULT_FRONT): string {
-  return "data:image/svg+xml," + encodeURIComponent(stairTileSvg(stairStyle(frontHeight)));
+/** The stair tile for a given front height and colours, as a data URL. */
+export function stairTileUrl(frontHeight: number = DEFAULT_FRONT, colors: StairColors = {}): string {
+  return "data:image/svg+xml," + encodeURIComponent(stairTileSvg(stairStyle(frontHeight, colors)));
 }
 
 /** The default stair tile as a data URL, ready to load into an Image. */
