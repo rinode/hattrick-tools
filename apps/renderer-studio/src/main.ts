@@ -30,7 +30,7 @@ function el<T extends HTMLElement>(id: string): T {
   return node as T;
 }
 
-/** Wires the config tab bar: clicking a tab shows its panel, hides the rest. */
+/** Wires the config tab bar and the settings drawer (open/close + sizing). */
 function setupTabs(): void {
   const btns = [...document.querySelectorAll<HTMLButtonElement>(".tab-btn")];
   const panels = [...document.querySelectorAll<HTMLElement>(".tab-panel")];
@@ -40,6 +40,28 @@ function setupTabs(): void {
   };
   for (const b of btns) b.addEventListener("click", () => show(b.dataset.tab ?? ""));
   if (btns[0]?.dataset.tab) show(btns[0].dataset.tab);
+
+  // Settings drawer: the toggle and backdrop open/close it; the drawer and
+  // backdrop start below the header, whose height is published as --header-h.
+  const controls = document.getElementById("controls");
+  const backdrop = document.getElementById("backdrop");
+  const toggle = document.getElementById("menuToggle");
+  const header = document.querySelector("header");
+  const syncHeaderH = (): void => {
+    if (header) document.documentElement.style.setProperty("--header-h", `${header.offsetHeight}px`);
+  };
+  syncHeaderH();
+  window.addEventListener("resize", syncHeaderH);
+  const setOpen = (open: boolean): void => {
+    controls?.classList.toggle("open", open);
+    backdrop?.classList.toggle("open", open);
+    toggle?.setAttribute("aria-expanded", String(open));
+  };
+  toggle?.addEventListener("click", () => setOpen(!controls?.classList.contains("open")));
+  backdrop?.addEventListener("click", () => setOpen(false));
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") setOpen(false);
+  });
 }
 setupTabs();
 

@@ -85,6 +85,10 @@ header {
   background: var(--ht-green);
   color: #fff;
   padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }
 
 header h1 {
@@ -98,6 +102,26 @@ header h1 {
 
 header a {
   color: #fff;
+}
+
+/* Header button that opens the settings drawer. */
+.menu-toggle {
+  margin: 0;
+  width: auto;
+  flex: 0 0 auto;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: var(--radius);
+  font-family: "Rosetta", Verdana, sans-serif;
+  font-size: 15px;
+  text-transform: lowercase;
+  cursor: pointer;
+}
+
+.menu-toggle:hover {
+  background: rgba(255, 255, 255, 0.24);
 }
 
 a {
@@ -167,13 +191,45 @@ button.secondary:hover {
   background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
-/* Tabbed control panel, shared across apps. The controls column is a full-height
-   flex column: a wrapping tab bar on top, the active panel scrolling in the
-   middle, and a pinned footer (e.g. the export button) at the bottom. */
+/* The controls are a settings drawer that slides in from the left over the
+   render area (same on desktop and mobile). Inside, it's a flex column: the
+   tab bar on top and the active panel scrolling below. A backdrop dims the
+   rest and closes it on click. */
 #controls {
+  position: fixed;
+  top: var(--header-h, 58px);
+  bottom: 0;
+  left: 0;
+  z-index: 50;
+  width: min(92vw, 340px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  border: 0;
+  border-right: 1px solid var(--line);
+  border-radius: 0;
+  box-shadow: 2px 0 18px rgba(0, 0, 0, 0.18);
+  transform: translateX(-100%);
+  transition: transform 0.2s ease;
+}
+
+#controls.open {
+  transform: translateX(0);
+}
+
+.drawer-backdrop {
+  position: fixed;
+  inset: var(--header-h, 58px) 0 0 0;
+  z-index: 40;
+  background: rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease;
+}
+
+.drawer-backdrop.open {
+  opacity: 1;
+  visibility: visible;
 }
 
 /* Segmented control: one rounded, bordered container holds the tabs so they
@@ -230,21 +286,4 @@ button.secondary:hover {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
-}
-
-/* On narrow screens the panel stacks above the render area and the page scrolls
-   normally, so drop the full-height constraints. */
-@media (max-width: 720px) {
-  body {
-    height: auto;
-  }
-
-  #controls {
-    overflow: visible;
-  }
-
-  #controls .tab-panel.active {
-    overflow: visible;
-    flex: none;
-  }
 }
