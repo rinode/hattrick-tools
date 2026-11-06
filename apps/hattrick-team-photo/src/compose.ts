@@ -12,10 +12,20 @@ export interface PhotoMeta {
   teamName?: string;
   /** Team crest drawn against the right edge of the header (null to hide). */
   crest?: HTMLImageElement | null;
+  /** Draw a drop shadow behind the crest. */
+  crestShadow?: boolean;
   /** Squad members, in figure order, listed under the photo row by row. */
   members?: { number: number; name: string }[];
   /** Solid background colour (CSS), used when no background image is set. */
   bgColor?: string | null;
+  /** Font family for the team-name header. */
+  headerFont?: string;
+  /** Colour for the team-name header. */
+  headerColor?: string;
+  /** Font family for the player names. */
+  namesFont?: string;
+  /** Colour for the player names. */
+  namesColor?: string;
 }
 
 const SIDE = 24;
@@ -24,8 +34,10 @@ const LINE_H = 26;
 const FOOTER_PAD = 18;
 const NAME_GAP = 28;
 const MIN_WIDTH = 560;
-const HEADER_FONT = '700 52px "Roboto", Verdana, sans-serif';
-const FOOTER_FONT = '500 15px "Roboto", Verdana, sans-serif';
+const HEADER_SIZE = 52;
+const FOOTER_SIZE = 15;
+const DEFAULT_HEADER_FONT = "Rosetta";
+const DEFAULT_NAMES_FONT = "Roboto";
 // Minimum gap between the team name and the crest before the frame widens.
 const HEADER_GAP = 20;
 // Each row's feet sit this far below the stair tile's top, centering them in the
@@ -34,14 +46,15 @@ const STAIR_ABOVE_FEET = 32;
 // Drop figures slightly so their rendered shadow rests on the step.
 const FIGURE_DROP = 10;
 
-// All text is white with a black drop shadow so it reads over any background.
-function withShadow(ctx: CanvasRenderingContext2D, draw: () => void): void {
+// Text is drawn in the chosen colour with a black drop shadow so it reads over
+// any background.
+function withShadow(ctx: CanvasRenderingContext2D, color: string, draw: () => void): void {
   ctx.save();
   ctx.shadowColor = "rgba(0,0,0,0.85)";
   ctx.shadowBlur = 3;
   ctx.shadowOffsetX = 1;
   ctx.shadowOffsetY = 1;
-  ctx.fillStyle = "#ffffff";
+  ctx.fillStyle = color;
   draw();
   ctx.restore();
 }
@@ -62,6 +75,11 @@ export function composeTeamPhoto(
   const hasCrest = Boolean(meta.crest && meta.crest.naturalWidth > 0);
   const hasHeader = Boolean((meta.teamName && meta.teamName.trim()) || hasCrest);
   const members = meta.members ?? [];
+
+  const headerFontStr = `700 ${HEADER_SIZE}px "${meta.headerFont || DEFAULT_HEADER_FONT}", Verdana, sans-serif`;
+  const namesFontStr = `500 ${FOOTER_SIZE}px "${meta.namesFont || DEFAULT_NAMES_FONT}", Verdana, sans-serif`;
+  const headerColor = meta.headerColor || "#ffffff";
+  const namesColor = meta.namesColor || "#ffffff";
 
   const hasStairs = Boolean(stairs && stairs.naturalWidth > 0);
   const stairW = hasStairs ? stairs!.naturalWidth : 0;
@@ -87,7 +105,7 @@ export function composeTeamPhoto(
   // name stays centered, so reserve the crest's width (plus a gap) on both sides
   // to keep it from overlapping the crest.
   const name = meta.teamName?.trim() ?? "";
-  ctx.font = HEADER_FONT;
+  ctx.font = headerFontStr;
   const nameW = name ? ctx.measureText(name).width : 0;
   const headerNeed = name
     ? nameW + 2 * SIDE + (hasCrest ? 2 * (crestW + HEADER_GAP) : 0)
@@ -95,7 +113,7 @@ export function composeTeamPhoto(
       ? crestW + 2 * SIDE
       : 0;
 
-  ctx.font = FOOTER_FONT;
+  ctx.font = namesFontStr;
   let footerLine = 0;
   if (footerRows) {
     let idx = 0;
@@ -146,11 +164,17 @@ export function composeTeamPhoto(
     if (name) {
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.font = HEADER_FONT;
-      withShadow(ctx, () => ctx.fillText(name, out.width / 2, headerH / 2));
+      ctx.font = headerFontStr;
+      withShadow(ctx, headerColor, () => ctx.fillText(name, out.width / 2, headerH / 2));
     }
     if (hasCrest) {
-      ctx.drawImage(meta.crest!, out.width - crestW - SIDE, (headerH - crestH) / 2, crestW, crestH);
+      const cx = out.width - crestW - SIDE;
+      const cy = (headerH - crestH) / 2;
+      if (meta.crestShadow) {
+        withShadow(ctx, "#000000", () => ctx.drawImage(meta.crest!, cx, cy, crestW, crestH));
+      } else {
+        ctx.drawImage(meta.crest!, cx, cy, crestW, crestH);
+      }
     }
   }
 
@@ -165,7 +189,7 @@ export function composeTeamPhoto(
   if (footerRows) {
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
-    ctx.font = FOOTER_FONT;
+    ctx.font = namesFontStr;
     const top = headerH + layout.height + bodyExtra + FOOTER_PAD;
     let idx = 0;
     layout.rowCounts.forEach((n, row) => {
@@ -178,7 +202,7 @@ export function composeTeamPhoto(
       const y = top + row * LINE_H + LINE_H / 2;
       let x = (out.width - total) / 2;
       tokens.forEach((t, i) => {
-        withShadow(ctx, () => ctx.fillText(t, x, y));
+        withShadow(ctx, namesColor, () => ctx.fillText(t, x, y));
         x += widths[i]! + NAME_GAP;
       });
     });

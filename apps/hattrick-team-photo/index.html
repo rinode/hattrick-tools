@@ -8,7 +8,6 @@
   <body>
     <header>
       <h1>Team Photo</h1>
-      <p>Renders your squad into a team photo.</p>
     </header>
     <main>
       <div id="controls" class="panel">
@@ -61,6 +60,11 @@
               >
             </div>
             <div class="check">
+              <input id="crestShadow" type="checkbox" /><label for="crestShadow" style="margin: 0"
+                >Crest drop shadow</label
+              >
+            </div>
+            <div class="check">
               <input id="showNames" type="checkbox" checked /><label for="showNames" style="margin: 0"
                 >Player names</label
               >
@@ -72,6 +76,44 @@
                 >Stairs</label
               >
             </div>
+          </div>
+        </details>
+
+        <details class="section" open>
+          <summary>Text</summary>
+          <div class="section-body">
+            <label for="headerFont">Team name font</label>
+            <div class="slider-row">
+              <div class="combo">
+                <input
+                  id="headerFont"
+                  class="combo-input"
+                  value="Rosetta"
+                  autocomplete="off"
+                  spellcheck="false"
+                />
+                <div class="combo-list" hidden></div>
+              </div>
+              <input id="headerColor" type="color" value="#ffffff" class="swatch swatch-sm" />
+            </div>
+
+            <label for="namesFont">Player names font</label>
+            <div class="slider-row">
+              <div class="combo">
+                <input
+                  id="namesFont"
+                  class="combo-input"
+                  value="Roboto"
+                  autocomplete="off"
+                  spellcheck="false"
+                />
+                <div class="combo-list" hidden></div>
+              </div>
+              <input id="namesColor" type="color" value="#ffffff" class="swatch swatch-sm" />
+            </div>
+
+            <label for="fontUpload">Upload a font</label>
+            <input id="fontUpload" type="file" accept=".ttf,.otf,.woff,.woff2" />
           </div>
         </details>
 

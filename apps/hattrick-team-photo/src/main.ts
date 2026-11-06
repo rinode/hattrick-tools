@@ -99,6 +99,129 @@ function syncReadouts(): void {
   el("bgAlphaVal").textContent = `${el<HTMLInputElement>("bgAlpha").value}%`;
 }
 
+// --- Fonts -------------------------------------------------------------------
+// The two font pickers draw from the full Google Fonts library, fetched once at
+// runtime, plus the bundled Rosetta and any uploaded fonts. Each picked Google
+// font is loaded on demand; Rosetta (CSS) and uploads are already available.
+let allFonts: string[] = [];
+const loadedGoogle = new Set<string>();
+const customFonts = new Set<string>();
+
+// Always-present families (Rosetta and Roboto ship with the theme) plus a solid
+// set of popular Google fonts, used as the list when the live fetch is blocked.
+const FALLBACK_FONTS = [
+  "Rosetta", "Roboto", "Open Sans", "Lato", "Montserrat", "Oswald", "Raleway", "Poppins",
+  "Merriweather", "Playfair Display", "Bebas Neue", "Inter", "Nunito", "Source Sans 3",
+  "Roboto Condensed", "Roboto Slab", "PT Sans", "Noto Sans", "Ubuntu", "Rubik", "Work Sans",
+  "Fira Sans", "Quicksand", "Josefin Sans", "Archivo", "Barlow", "Dosis", "Teko", "Anton",
+  "Pacifico", "Lobster", "Dancing Script", "Caveat", "Permanent Marker", "Abril Fatface",
+  "Comfortaa", "Righteous", "Great Vibes", "Bangers", "Fredoka", "Baloo 2", "Cinzel",
+  "Cormorant Garamond", "EB Garamond", "Libre Baskerville", "Bitter", "Arvo", "Zilla Slab",
+  "Space Grotesk", "Sora", "Manrope", "Figtree", "Outfit", "Plus Jakarta Sans", "DM Sans",
+  "DM Serif Display", "Kanit", "Prompt", "Mulish", "Karla", "Heebo", "Jost", "Lexend",
+  "Albert Sans", "Fraunces", "Chivo", "Red Hat Display", "Urbanist", "Be Vietnam Pro",
+  "Saira", "Cabin", "Varela Round", "Alfa Slab One", "Russo One", "Monoton", "Orbitron",
+  "Audiowide", "Press Start 2P", "VT323",
+];
+
+/** Loads the full family list once; falls back to the bundled set if blocked. */
+async function loadFontList(): Promise<void> {
+  let families: string[] = [];
+  try {
+    const res = await fetch("https://cdn.jsdelivr.net/npm/google-fonts-complete@1.3.0/api-response.json");
+    if (res.ok) families = Object.keys((await res.json()) as Record<string, unknown>);
+  } catch {
+    /* offline or blocked; the fallback set is used */
+  }
+  const set = new Set<string>([...FALLBACK_FONTS, ...families, ...customFonts]);
+  allFonts = [...set].sort((a, b) => a.localeCompare(b));
+}
+
+/** Ensures a family is loaded so the canvas can draw with it. */
+async function ensureFont(family: string): Promise<void> {
+  if (!family || family === "Rosetta" || customFonts.has(family)) return;
+  if (!loadedGoogle.has(family)) {
+    loadedGoogle.add(family);
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}:wght@400;500;700&display=swap`;
+    document.head.appendChild(link);
+  }
+  try {
+    await Promise.all([
+      document.fonts.load(`700 52px "${family}"`),
+      document.fonts.load(`500 15px "${family}"`),
+    ]);
+  } catch {
+    /* fall back to the default font if it cannot load */
+  }
+}
+
+/** Turns a font input into a searchable dropdown over the family list. */
+function setupFontCombo(inputId: string, onPick: (family: string) => void): void {
+  const input = el<HTMLInputElement>(inputId);
+  const list = input.parentElement!.querySelector(".combo-list") as HTMLElement;
+  let shown: string[] = [];
+  let active = -1;
+
+  function render(): void {
+    const f = input.value.trim().toLowerCase();
+    shown = (f ? allFonts.filter((n) => n.toLowerCase().includes(f)) : allFonts).slice(0, 300);
+    list.replaceChildren();
+    if (!shown.length) {
+      const e = document.createElement("div");
+      e.className = "combo-empty";
+      e.textContent = "No fonts";
+      list.appendChild(e);
+    } else {
+      shown.forEach((name) => {
+        const d = document.createElement("div");
+        d.className = "combo-item";
+        d.textContent = name;
+        d.addEventListener("mousedown", (ev) => {
+          ev.preventDefault();
+          choose(name);
+        });
+        list.appendChild(d);
+      });
+    }
+    active = -1;
+    list.hidden = false;
+  }
+
+  function choose(name: string): void {
+    input.value = name;
+    list.hidden = true;
+    onPick(name);
+  }
+
+  input.addEventListener("focus", render);
+  input.addEventListener("input", render);
+  input.addEventListener("blur", () => setTimeout(() => (list.hidden = true), 150));
+  input.addEventListener("keydown", (e) => {
+    if (list.hidden) return;
+    const rows = [...list.querySelectorAll(".combo-item")] as HTMLElement[];
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      active = Math.min(active + 1, rows.length - 1);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      active = Math.max(active - 1, 0);
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      choose((active >= 0 ? shown[active] : undefined) ?? input.value);
+      return;
+    } else if (e.key === "Escape") {
+      list.hidden = true;
+      return;
+    } else {
+      return;
+    }
+    rows.forEach((r, i) => r.classList.toggle("active", i === active));
+    if (active >= 0) rows[active]!.scrollIntoView({ block: "nearest" });
+  });
+}
+
 function avatarInputs(player: SquadPlayer): RenderInputs {
   const inputs = renderInputsFromAvatar(player.avatar!, { gender: player.gender });
   // Route the remote kit data through the worker's same-origin proxy. Face
@@ -181,8 +304,13 @@ function recompose(): void {
   const meta: PhotoMeta = {
     teamName: checked("showName") ? teamName : undefined,
     crest: checked("showCrest") ? crest : null,
+    crestShadow: checked("crestShadow"),
     members: checked("showNames") ? members : [],
     bgColor: bgFill(),
+    headerFont: el<HTMLInputElement>("headerFont").value || undefined,
+    headerColor: el<HTMLInputElement>("headerColor").value,
+    namesFont: el<HTMLInputElement>("namesFont").value || undefined,
+    namesColor: el<HTMLInputElement>("namesColor").value,
   };
   const floor = checked("showStairs") ? stairs : null;
   composed = composeTeamPhoto(rendered, computeLayout(widths, opts), opts, background, meta, floor);
@@ -328,7 +456,7 @@ async function loadDemo(): Promise<void> {
 }
 
 // Layout and label controls only affect composition, so they recompose instantly.
-for (const id of ["rows", "stagger", "showName", "showCrest", "showNames", "showStairs"]) {
+for (const id of ["rows", "stagger", "showName", "showCrest", "showNames", "showStairs", "crestShadow"]) {
   const ev = id === "rows" ? "input" : "change";
   el<HTMLInputElement>(id).addEventListener(ev, () => {
     syncReadouts();
@@ -341,6 +469,38 @@ el<HTMLInputElement>("bgColor").addEventListener("input", () => recompose());
 el<HTMLInputElement>("bgAlpha").addEventListener("input", () => {
   syncReadouts();
   recompose();
+});
+
+// Text colour pickers.
+el<HTMLInputElement>("headerColor").addEventListener("input", () => recompose());
+el<HTMLInputElement>("namesColor").addEventListener("input", () => recompose());
+
+// Font pickers: load the chosen family, then recompose.
+setupFontCombo("headerFont", (f) => void ensureFont(f).then(() => recompose()));
+setupFontCombo("namesFont", (f) => void ensureFont(f).then(() => recompose()));
+
+// Upload a custom font: register it and make it selectable in both pickers.
+el<HTMLInputElement>("fontUpload").addEventListener("change", async (event) => {
+  const file = (event.target as HTMLInputElement).files?.[0];
+  if (!file) return;
+  const family = file.name.replace(/\.(ttf|otf|woff2?)$/i, "").trim() || "Custom font";
+  try {
+    const face = new FontFace(family, await file.arrayBuffer());
+    await face.load();
+    document.fonts.add(face);
+    customFonts.add(family);
+    if (!allFonts.includes(family)) allFonts.unshift(family);
+    recompose();
+  } catch (err) {
+    console.error("font upload", err);
+  }
+});
+
+// Fetch the family list, then redraw once the default fonts are ready so the
+// first photo uses Rosetta/Roboto rather than a fallback.
+void loadFontList();
+document.fonts.ready.then(() => {
+  if (composed) recompose();
 });
 
 // The front face drives the stair tile and the row spacing; regenerate the tile
