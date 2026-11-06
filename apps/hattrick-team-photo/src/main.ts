@@ -83,6 +83,22 @@ function checked(id: string): boolean {
   return el<HTMLInputElement>(id).checked;
 }
 
+/** The background fill: the picked colour at the chosen opacity, as rgba(). */
+function bgFill(): string {
+  const hex = el<HTMLInputElement>("bgColor").value;
+  const a = Number(el<HTMLInputElement>("bgAlpha").value) / 100;
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
+
+/** Updates the value labels shown next to the sliders. */
+function syncReadouts(): void {
+  el("rowsVal").textContent = el<HTMLInputElement>("rows").value;
+  el("bgAlphaVal").textContent = `${el<HTMLInputElement>("bgAlpha").value}%`;
+}
+
 function avatarInputs(player: SquadPlayer): RenderInputs {
   const inputs = renderInputsFromAvatar(player.avatar!, { gender: player.gender });
   // Route the remote kit data through the worker's same-origin proxy. Face
@@ -166,7 +182,7 @@ function recompose(): void {
     teamName: checked("showName") ? teamName : undefined,
     crest: checked("showCrest") ? crest : null,
     members: checked("showNames") ? members : [],
-    bgColor: el<HTMLInputElement>("bgColor").value,
+    bgColor: bgFill(),
   };
   const floor = checked("showStairs") ? stairs : null;
   composed = composeTeamPhoto(rendered, computeLayout(widths, opts), opts, background, meta, floor);
@@ -228,6 +244,7 @@ async function showSquad(label: string): Promise<void> {
   const rowsEl = el<HTMLInputElement>("rows");
   rowsEl.max = String(Math.max(1, squad.length));
   if (Number(rowsEl.value) > squad.length) rowsEl.value = rowsEl.max;
+  syncReadouts();
   renderSquadList();
   await renderFigures();
   recompose();
@@ -309,11 +326,18 @@ async function loadDemo(): Promise<void> {
 // Layout and label controls only affect composition, so they recompose instantly.
 for (const id of ["rows", "stagger", "showName", "showCrest", "showNames", "showStairs"]) {
   const ev = id === "rows" ? "input" : "change";
-  el<HTMLInputElement>(id).addEventListener(ev, () => recompose());
+  el<HTMLInputElement>(id).addEventListener(ev, () => {
+    syncReadouts();
+    recompose();
+  });
 }
 
-// Background colour picker; recompose live as it changes.
+// Background colour and opacity; recompose live as they change.
 el<HTMLInputElement>("bgColor").addEventListener("input", () => recompose());
+el<HTMLInputElement>("bgAlpha").addEventListener("input", () => {
+  syncReadouts();
+  recompose();
+});
 
 // The front face drives the stair tile and the row spacing; regenerate the tile
 // (its onload recomposes with the new rowRise).

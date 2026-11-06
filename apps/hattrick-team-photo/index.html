@@ -31,7 +31,10 @@
           <summary>Layout</summary>
           <div class="section-body">
             <label for="rows">Rows</label>
-            <input id="rows" type="range" min="1" max="8" step="1" value="3" />
+            <div class="slider-row">
+              <input id="rows" type="range" min="1" max="8" step="1" value="3" />
+              <span id="rowsVal" class="slider-val">3</span>
+            </div>
 
             <label for="stairH">Row height</label>
             <input id="stairH" type="range" min="20" max="90" step="1" value="25" />
@@ -77,6 +80,12 @@
           <div class="section-body">
             <label for="bgColor">Colour</label>
             <input id="bgColor" type="color" value="#3f7137" class="swatch" />
+
+            <label for="bgAlpha">Opacity</label>
+            <div class="slider-row">
+              <input id="bgAlpha" type="range" min="0" max="100" step="1" value="100" />
+              <span id="bgAlphaVal" class="slider-val">100%</span>
+            </div>
 
             <label for="bgFile">Image</label>
             <input id="bgFile" type="file" accept="image/*" />

@@ -124,6 +124,25 @@ main {
   border-radius: calc(var(--radius) - 2px);
 }
 
+/* A slider with its current value shown alongside. */
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.slider-row input[type="range"] {
+  flex: 1;
+}
+
+.slider-val {
+  min-width: 36px;
+  text-align: right;
+  font-size: 13px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
 /* Centered message shown in the render area (e.g. no players selected). */
 .stage-msg {
   display: grid;
