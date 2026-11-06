@@ -16,8 +16,14 @@ export interface PhotoMeta {
   crestShadow?: boolean;
   /** Squad members, in figure order, listed under the photo row by row. */
   members?: { number: number; name: string }[];
-  /** Solid background colour (CSS), used when no background image is set. */
+  /** Solid background colour (CSS); also shows behind a "contain" image. */
   bgColor?: string | null;
+  /** How the background image fills the frame. Default "cover". */
+  bgFit?: "cover" | "contain" | "stretch" | "tile";
+  /** Where the image aligns for cover/contain, e.g. "center", "top-left". */
+  bgPosition?: string;
+  /** Crest size multiplier (1 = default header height). */
+  crestScale?: number;
   /** Font family for the team-name header. */
   headerFont?: string;
   /** Font weight for the team-name header (default 700). */
@@ -70,6 +76,45 @@ function withShadow(ctx: CanvasRenderingContext2D, color: string, draw: () => vo
   ctx.restore();
 }
 
+/** Alignment factors [horizontal, vertical] in 0..1 from a position keyword. */
+function positionFactors(pos = "center"): [number, number] {
+  const h = pos.includes("left") ? 0 : pos.includes("right") ? 1 : 0.5;
+  const v = pos.includes("top") ? 0 : pos.includes("bottom") ? 1 : 0.5;
+  return [h, v];
+}
+
+/** Draws the background image into the frame per the chosen fit mode. */
+function drawBackground(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  w: number,
+  h: number,
+  fit: "cover" | "contain" | "stretch" | "tile",
+  position?: string,
+): void {
+  const bw = img.naturalWidth;
+  const bh = img.naturalHeight;
+  if (fit === "stretch") {
+    ctx.drawImage(img, 0, 0, w, h);
+    return;
+  }
+  if (fit === "tile") {
+    const pattern = ctx.createPattern(img, "repeat");
+    if (pattern) {
+      ctx.save();
+      ctx.fillStyle = pattern;
+      ctx.fillRect(0, 0, w, h);
+      ctx.restore();
+    }
+    return;
+  }
+  const scale = fit === "contain" ? Math.min(w / bw, h / bh) : Math.max(w / bw, h / bh);
+  const dw = bw * scale;
+  const dh = bh * scale;
+  const [hx, vy] = positionFactors(position);
+  ctx.drawImage(img, (w - dw) * hx, (h - dh) * vy, dw, dh);
+}
+
 /**
  * Paints the photo: an optional header (team name + crest), the figures, and an
  * optional footer listing the squad row by row (each figure row's names on one
@@ -114,8 +159,8 @@ export function composeTeamPhoto(
   const ctx = out.getContext("2d");
   if (!ctx) throw new Error("no 2d canvas context");
 
-  // Crest size in the header.
-  const crestH = HEADER_H - 28;
+  // Crest size in the header, scaled but kept within the header height.
+  const crestH = Math.min(HEADER_H - 8, (HEADER_H - 28) * (meta.crestScale ?? 1));
   const crestW = hasCrest ? meta.crest!.naturalWidth * (crestH / meta.crest!.naturalHeight) : 0;
 
   // Measure the text so the frame is never too narrow to show it in full. The
@@ -154,14 +199,14 @@ export function composeTeamPhoto(
   out.width = Math.ceil(width);
   out.height = Math.max(1, headerH + layout.height + bodyExtra + footerH);
 
-  if (background && background.naturalWidth > 0) {
-    const scale = Math.max(out.width / background.naturalWidth, out.height / background.naturalHeight);
-    const dw = background.naturalWidth * scale;
-    const dh = background.naturalHeight * scale;
-    ctx.drawImage(background, (out.width - dw) / 2, (out.height - dh) / 2, dw, dh);
-  } else if (meta.bgColor) {
+  // Background colour first (shows through a "contain" image's letterbox), then
+  // the image per the chosen fit mode and alignment.
+  if (meta.bgColor) {
     ctx.fillStyle = meta.bgColor;
     ctx.fillRect(0, 0, out.width, out.height);
+  }
+  if (background && background.naturalWidth > 0) {
+    drawBackground(ctx, background, out.width, out.height, meta.bgFit ?? "cover", meta.bgPosition);
   }
 
   // Stairs: one tiled band per figure row, drawn back-to-front so the front

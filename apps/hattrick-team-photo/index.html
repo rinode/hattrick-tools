@@ -100,6 +100,13 @@
                 >Crest drop shadow</label
               >
             </div>
+
+            <label for="crestScale">Crest size</label>
+            <div class="slider-row">
+              <input id="crestScale" type="range" min="50" max="130" step="1" value="100" />
+              <span id="crestScaleVal" class="slider-val">100%</span>
+            </div>
+
             <div class="check">
               <input id="showNames" type="checkbox" checked /><label for="showNames" style="margin: 0"
                 >Player names</label
@@ -177,6 +184,27 @@
             <label for="bgFile">Image</label>
             <input id="bgFile" type="file" accept="image/*" />
             <div id="uploadedBg" class="uploads"></div>
+
+            <label for="bgFit">Image fit</label>
+            <select id="bgFit" class="font-style">
+              <option value="cover" selected>Cover</option>
+              <option value="contain">Contain</option>
+              <option value="stretch">Stretch</option>
+              <option value="tile">Tile</option>
+            </select>
+
+            <label for="bgPosition">Image position</label>
+            <select id="bgPosition" class="font-style">
+              <option value="center" selected>Center</option>
+              <option value="top">Top</option>
+              <option value="bottom">Bottom</option>
+              <option value="left">Left</option>
+              <option value="right">Right</option>
+              <option value="top-left">Top left</option>
+              <option value="top-right">Top right</option>
+              <option value="bottom-left">Bottom left</option>
+              <option value="bottom-right">Bottom right</option>
+            </select>
           </div>
         </div>
 

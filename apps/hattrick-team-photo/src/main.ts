@@ -149,6 +149,7 @@ function syncReadouts(): void {
   el("bgAlphaVal").textContent = `${el<HTMLInputElement>("bgAlpha").value}%`;
   el("headerSizeVal").textContent = el<HTMLInputElement>("headerSize").value;
   el("namesSizeVal").textContent = el<HTMLInputElement>("namesSize").value;
+  el("crestScaleVal").textContent = `${el<HTMLInputElement>("crestScale").value}%`;
 }
 
 // --- Fonts -------------------------------------------------------------------
@@ -525,6 +526,7 @@ function recompose(): void {
     teamName: checked("showName") ? teamName : undefined,
     crest: checked("showCrest") ? crest : null,
     crestShadow: checked("crestShadow"),
+    crestScale: Number(el<HTMLInputElement>("crestScale").value) / 100,
     members: checked("showNames") ? members : [],
     bgColor: bgFill(),
     headerFont: el<HTMLInputElement>("headerFont").value || undefined,
@@ -537,6 +539,8 @@ function recompose(): void {
     namesItalic: styleOf("namesStyle").italic,
     namesSize: Number(el<HTMLInputElement>("namesSize").value),
     namesColor: el<HTMLInputElement>("namesColor").value,
+    bgFit: el<HTMLSelectElement>("bgFit").value as PhotoMeta["bgFit"],
+    bgPosition: el<HTMLSelectElement>("bgPosition").value,
   };
   const floor = checked("showStairs") ? stairs : null;
   composed = composeTeamPhoto(rendered, computeLayout(widths, opts), opts, background, meta, floor);
@@ -872,13 +876,26 @@ el<HTMLInputElement>("kitUpload").addEventListener("change", (event) => {
 });
 
 // Layout and label controls only affect composition, so they recompose instantly.
-for (const id of ["rows", "stagger", "showName", "showCrest", "showNames", "showStairs", "crestShadow"]) {
-  const ev = id === "rows" ? "input" : "change";
+for (const id of [
+  "rows",
+  "crestScale",
+  "stagger",
+  "showName",
+  "showCrest",
+  "showNames",
+  "showStairs",
+  "crestShadow",
+]) {
+  const ev = id === "rows" || id === "crestScale" ? "input" : "change";
   el<HTMLInputElement>(id).addEventListener(ev, () => {
     syncReadouts();
     recompose();
   });
 }
+
+// Background image fit and position.
+el<HTMLSelectElement>("bgFit").addEventListener("change", () => recompose());
+el<HTMLSelectElement>("bgPosition").addEventListener("change", () => recompose());
 
 // Background colour and opacity; recompose live as they change.
 el<HTMLInputElement>("bgColor").addEventListener("input", () => recompose());
