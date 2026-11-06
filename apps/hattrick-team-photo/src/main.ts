@@ -526,7 +526,7 @@ function recompose(): void {
   }
   const meta: PhotoMeta = {
     teamName: checked("showName") ? teamName : undefined,
-    crest: checked("showCrest") ? crest : null,
+    crest: checked("showCrest") ? (crestOverride ?? crest) : null,
     crestShadow: checked("crestShadow"),
     crestScale: Number(el<HTMLInputElement>("crestScale").value) / 100,
     badge: checked("showBadge") ? badge : null,
@@ -548,7 +548,8 @@ function recompose(): void {
     bgPosition: el<HTMLSelectElement>("bgPosition").value,
   };
   const floor = checked("showStairs") ? stairs : null;
-  composed = composeTeamPhoto(rendered, computeLayout(widths, opts), opts, background, meta, floor);
+  const bg = checked("showBg") ? background : null;
+  composed = composeTeamPhoto(rendered, computeLayout(widths, opts), opts, bg, meta, floor);
   composed.style.maxWidth = "100%";
   stage.replaceChildren(composed);
 }
@@ -766,6 +767,10 @@ let backgroundName = "";
 let backgroundUrl: string | null = null;
 let badgeName = "";
 let badgeUrl: string | null = null;
+// An uploaded crest overrides the team logo; removing it falls back to the logo.
+let crestOverride: HTMLImageElement | null = null;
+let crestOverrideName = "";
+let crestOverrideUrl: string | null = null;
 const KIT_DEFAULT: Record<string, string> = {
   playersKit: "home",
   keepersKit: "away",
@@ -813,6 +818,13 @@ function renderBadgeUpload(): void {
   const list = el("uploadedBadge");
   list.replaceChildren();
   if (badge && badgeName) list.appendChild(uploadItem(badgeName, removeBadge));
+}
+
+function renderCrestUpload(): void {
+  const list = el("uploadedCrest");
+  list.replaceChildren();
+  if (crestOverride && crestOverrideName)
+    list.appendChild(uploadItem(crestOverrideName, removeCrestOverride));
 }
 
 /** Removes an uploaded font: drop its face, delist it, reset any picker using it. */
@@ -878,6 +890,17 @@ function removeBadge(): void {
   recompose();
 }
 
+/** Removes the crest override, falling back to the team logo. */
+function removeCrestOverride(): void {
+  if (crestOverrideUrl) URL.revokeObjectURL(crestOverrideUrl);
+  crestOverrideUrl = null;
+  crestOverrideName = "";
+  crestOverride = null;
+  el<HTMLInputElement>("crestFile").value = "";
+  renderCrestUpload();
+  recompose();
+}
+
 // Upload custom kits (kitData.json); each becomes selectable in every kit picker.
 el<HTMLInputElement>("kitUpload").addEventListener("change", (event) => {
   const input = event.target as HTMLInputElement;
@@ -908,6 +931,7 @@ for (const id of [
   "showCrest",
   "showNames",
   "showStairs",
+  "showBg",
   "crestShadow",
 ]) {
   const ev = id === "rows" || id === "crestScale" ? "input" : "change";
@@ -1033,6 +1057,21 @@ el<HTMLInputElement>("badgeFile").addEventListener("change", (event) => {
     recompose();
   };
   img.src = badgeUrl;
+});
+
+el<HTMLInputElement>("crestFile").addEventListener("change", (event) => {
+  const file = (event.target as HTMLInputElement).files?.[0];
+  if (!file) return;
+  if (crestOverrideUrl) URL.revokeObjectURL(crestOverrideUrl);
+  crestOverrideUrl = URL.createObjectURL(file);
+  crestOverrideName = file.name;
+  const img = new Image();
+  img.onload = () => {
+    crestOverride = img;
+    renderCrestUpload();
+    recompose();
+  };
+  img.src = crestOverrideUrl;
 });
 
 // Badge show/hide, size and shadow.

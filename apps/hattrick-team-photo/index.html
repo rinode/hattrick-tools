@@ -40,7 +40,8 @@
           <button type="button" class="tab-btn" data-tab="display">Show</button>
           <button type="button" class="tab-btn" data-tab="text">Text</button>
           <button type="button" class="tab-btn" data-tab="bg">Background</button>
-          <button type="button" class="tab-btn" data-tab="badge">Badge</button>
+          <button type="button" class="tab-btn" data-tab="badge">Logo (top left)</button>
+          <button type="button" class="tab-btn" data-tab="crest">Logo (top right)</button>
           <button type="button" class="tab-btn" data-tab="kits">Kits</button>
           <button type="button" class="tab-btn" data-tab="export">Export</button>
         </div>
@@ -91,23 +92,6 @@
                 >Team name</label
               >
             </div>
-            <div class="check">
-              <input id="showCrest" type="checkbox" checked /><label for="showCrest" style="margin: 0"
-                >Crest</label
-              >
-            </div>
-            <div class="check">
-              <input id="crestShadow" type="checkbox" /><label for="crestShadow" style="margin: 0"
-                >Crest drop shadow</label
-              >
-            </div>
-
-            <label for="crestScale">Crest size</label>
-            <div class="slider-row">
-              <input id="crestScale" type="range" min="50" max="130" step="1" value="100" />
-              <span id="crestScaleVal" class="slider-val">100%</span>
-            </div>
-
             <div class="check">
               <input id="showNames" type="checkbox" checked /><label for="showNames" style="margin: 0"
                 >Player names</label
@@ -182,6 +166,12 @@
               <span id="bgAlphaVal" class="slider-val">100%</span>
             </div>
 
+            <div class="check">
+              <input id="showBg" type="checkbox" checked /><label for="showBg" style="margin: 0"
+                >Show image</label
+              >
+            </div>
+
             <label for="bgFile">Image</label>
             <input id="bgFile" type="file" accept="image/*" />
             <div id="uploadedBg" class="uploads"></div>
@@ -209,13 +199,41 @@
           </div>
         </div>
 
+        <div class="tab-panel" data-tab="crest">
+          <div class="section-body">
+            <div class="check">
+              <input id="showCrest" type="checkbox" checked /><label
+                for="showCrest"
+                style="margin: 0"
+                >Show logo (top right)</label
+              >
+            </div>
+
+            <label for="crestFile">Image (overrides the team logo)</label>
+            <input id="crestFile" type="file" accept="image/*" />
+            <div id="uploadedCrest" class="uploads"></div>
+
+            <label for="crestScale">Size</label>
+            <div class="slider-row">
+              <input id="crestScale" type="range" min="50" max="130" step="1" value="100" />
+              <span id="crestScaleVal" class="slider-val">100%</span>
+            </div>
+
+            <div class="check">
+              <input id="crestShadow" type="checkbox" /><label for="crestShadow" style="margin: 0"
+                >Drop shadow</label
+              >
+            </div>
+          </div>
+        </div>
+
         <div class="tab-panel" data-tab="badge">
           <div class="section-body">
             <div class="check">
               <input id="showBadge" type="checkbox" checked /><label
                 for="showBadge"
                 style="margin: 0"
-                >Show badge (top left)</label
+                >Show logo (top left)</label
               >
             </div>
 
