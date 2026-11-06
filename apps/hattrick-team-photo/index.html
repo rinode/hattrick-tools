@@ -22,9 +22,12 @@
         <label>Squad <span id="teamName" class="team-name"></span></label>
         <div id="squad" class="squad"></div>
 
-        <label for="bgFile">Background</label>
+        <label for="bgColor">Background colour</label>
+        <input id="bgColor" type="color" value="#3f7137" />
+
+        <label for="bgFile">Background image</label>
         <input id="bgFile" type="file" accept="image/*" />
-        <button id="bgClear" type="button" class="secondary">Remove background</button>
+        <button id="bgClear" type="button" class="secondary">Remove image</button>
 
         <label for="rows">Rows</label>
         <input id="rows" type="number" value="3" min="1" max="8" />

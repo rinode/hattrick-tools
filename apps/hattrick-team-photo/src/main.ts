@@ -167,6 +167,7 @@ function recompose(): void {
     teamName: checked("showName") ? teamName : undefined,
     crest: checked("showCrest") ? crest : null,
     members: checked("showNames") ? members : [],
+    bgColor: el<HTMLInputElement>("bgColor").value,
   };
   const floor = checked("showStairs") ? stairs : null;
   composed = composeTeamPhoto(rendered, computeLayout(widths, opts), opts, background, meta, floor);
@@ -308,6 +309,9 @@ for (const id of ["rows", "stagger", "showName", "showCrest", "showNames", "show
   const ev = id === "rows" ? "input" : "change";
   el<HTMLInputElement>(id).addEventListener(ev, () => recompose());
 }
+
+// Background colour picker; recompose live as it changes.
+el<HTMLInputElement>("bgColor").addEventListener("input", () => recompose());
 
 // The front face drives the stair tile and the row spacing; regenerate the tile
 // (its onload recomposes with the new rowRise).

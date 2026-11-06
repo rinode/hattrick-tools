@@ -14,10 +14,12 @@ export interface PhotoMeta {
   crest?: HTMLImageElement | null;
   /** Squad members, in figure order, listed under the photo row by row. */
   members?: { number: number; name: string }[];
+  /** Solid background colour (CSS), used when no background image is set. */
+  bgColor?: string | null;
 }
 
 const SIDE = 24;
-const HEADER_H = 76;
+const HEADER_H = 112;
 const LINE_H = 26;
 const FOOTER_PAD = 18;
 const NAME_GAP = 28;
@@ -81,6 +83,9 @@ export function composeTeamPhoto(
     const dw = background.naturalWidth * scale;
     const dh = background.naturalHeight * scale;
     ctx.drawImage(background, (out.width - dw) / 2, (out.height - dh) / 2, dw, dh);
+  } else if (meta.bgColor) {
+    ctx.fillStyle = meta.bgColor;
+    ctx.fillRect(0, 0, out.width, out.height);
   }
 
   // Stairs: one tiled band per figure row, drawn back-to-front so the front
@@ -100,12 +105,12 @@ export function composeTeamPhoto(
     if (meta.teamName && meta.teamName.trim()) {
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.font = '700 34px "Roboto", Verdana, sans-serif';
+      ctx.font = '700 52px "Roboto", Verdana, sans-serif';
       withShadow(ctx, () => ctx.fillText(meta.teamName!.trim(), out.width / 2, headerH / 2));
     }
     if (hasCrest) {
       const crest = meta.crest!;
-      const h = HEADER_H - 20;
+      const h = HEADER_H - 28;
       const w = crest.naturalWidth * (h / crest.naturalHeight);
       ctx.drawImage(crest, out.width - w - SIDE, (headerH - h) / 2, w, h);
     }
