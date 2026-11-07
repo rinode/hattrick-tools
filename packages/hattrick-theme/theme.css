@@ -91,6 +91,22 @@ main {
   overflow: hidden;
 }
 
+/* Attribution footer: a thin, unobtrusive band under the render area. */
+.app-footer {
+  flex: 0 0 auto;
+  padding: 6px 16px;
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.app-footer a {
+  color: var(--link);
+}
+
 header {
   background: var(--ht-green);
   color: #fff;
