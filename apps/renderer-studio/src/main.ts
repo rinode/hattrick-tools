@@ -190,9 +190,36 @@ function currentFaceFile(): string {
   const shape = shapeOf();
   return `f${shape}${resolveTone(shape, selectedTone)}.png`;
 }
-function thumbUrl(cfg: PartCfg, value: string): string {
-  if (cfg.key === FACE) return `${BASE}/Img/Avatar/${faceBaseCat()}/${currentFaceFile()}`;
-  return value ? `${BASE}/Img/Avatar/${cfg.key}/${value}` : "";
+/** Face base file for a given shape at the current tone. */
+function faceFileForShape(shape: string): string {
+  return `f${shape}${resolveTone(shape, selectedTone)}.png`;
+}
+/** Thumbnail URL for one option value of a part (a FACE value is a shape string). */
+function optionThumbUrl(cfg: PartCfg, value: string): string {
+  if (!value) return "";
+  if (cfg.key === FACE) return `${BASE}/Img/Avatar/${faceBaseCat()}/${faceFileForShape(value)}`;
+  return `${BASE}/Img/Avatar/${cfg.key}/${value}`;
+}
+/** Short label for an option (filename without .png, or "none"/"shape N"). */
+function optionLabel(cfg: PartCfg, value: string): string {
+  if (!value) return "none";
+  if (cfg.key === FACE) return `shape ${value}`;
+  return value.replace(/\.png$/, "");
+}
+/** A checkerboard-backed thumbnail tile. */
+function thumbEl(url: string, alt: string): HTMLDivElement {
+  const t = document.createElement("div");
+  t.className = "thumb";
+  if (url) {
+    const img = document.createElement("img");
+    img.src = url;
+    img.alt = alt;
+    img.loading = "lazy";
+    t.appendChild(img);
+  } else {
+    t.classList.add("empty");
+  }
+  return t;
 }
 
 // --- Skin-tone swatches ------------------------------------------------------
@@ -211,7 +238,7 @@ function buildToneSwatches(): void {
       selectedTone = code;
       for (const c of swatchBox.children) c.setAttribute("aria-pressed", "false");
       b.setAttribute("aria-pressed", "true");
-      refreshFaceThumb();
+      buildSteppers(); // face thumbnails depend on the tone
       scheduleRender();
     });
     swatchBox.appendChild(b);
@@ -229,83 +256,98 @@ function currentValue(cfg: PartCfg, opts: string[]): string {
   return v;
 }
 
+/** Collapse every open part grid (accordion: at most one open at a time). */
+function closeAllGrids(): void {
+  for (const g of pickerBox.querySelectorAll<HTMLElement>(".grid")) g.hidden = true;
+  for (const t of pickerBox.querySelectorAll(".picker-trigger")) t.setAttribute("aria-expanded", "false");
+  for (const w of pickerBox.querySelectorAll(".picker-item")) w.classList.remove("open");
+}
+
+// Each part is a trigger showing the current selection; clicking it drops open a
+// scrollable grid of every valid option (thumbnails) to pick from. Grids build
+// lazily on first open. Options are the manifest-filtered set for the shape.
 function buildSteppers(): void {
   pickerBox.replaceChildren();
   for (const cfg of parts()) {
     const opts = optionsFor(cfg);
-    const key = cfg.key === FACE ? FACE : cfg.key;
+    const curVal = cfg.key === FACE ? shapeOf() : currentValue(cfg, opts);
 
     const wrap = document.createElement("div");
-    wrap.className = "stepper";
-    wrap.dataset.key = key;
+    wrap.className = "picker-item";
+    wrap.dataset.key = cfg.key;
+
     const head = document.createElement("div");
-    head.className = "stepper-head";
+    head.className = "picker-head";
     const label = document.createElement("span");
     label.textContent = cfg.label;
-    const idxEl = document.createElement("span");
-    idxEl.className = "stepper-idx";
-    head.append(label, idxEl);
-    const row = document.createElement("div");
-    row.className = "stepper-row";
-    const prev = document.createElement("button");
-    prev.type = "button";
-    prev.className = "arrow";
-    prev.textContent = "◀";
-    const thumb = document.createElement("div");
-    thumb.className = "thumb";
-    const img = document.createElement("img");
-    thumb.appendChild(img);
-    const next = document.createElement("button");
-    next.type = "button";
-    next.className = "arrow";
-    next.textContent = "▶";
-    row.append(prev, thumb, next);
-    wrap.append(head, row);
-    pickerBox.appendChild(wrap);
+    const cur = document.createElement("span");
+    cur.className = "picker-cur";
+    cur.textContent = optionLabel(cfg, curVal);
+    head.append(label, cur);
 
-    const indexNow = (): number => {
-      if (cfg.key === FACE) return faceShapeIdx;
-      return Math.max(0, opts.indexOf(currentValue(cfg, opts)));
-    };
-    const paint = (): void => {
-      const i = indexNow();
-      const value = opts[i] ?? "";
-      idxEl.textContent = `${i + 1}/${opts.length}`;
-      const url = thumbUrl(cfg, value);
-      if (url) {
-        img.src = url;
-        img.alt = cfg.key === FACE ? currentFaceFile() : value;
-        thumb.classList.remove("empty");
-      } else {
-        img.removeAttribute("src");
-        thumb.classList.add("empty");
-      }
-    };
-    const step = (d: number): void => {
-      const n = opts.length;
-      const i = (indexNow() + d + n) % n;
+    const trigger = document.createElement("button");
+    trigger.type = "button";
+    trigger.className = "picker-trigger";
+    trigger.setAttribute("aria-expanded", "false");
+    let trThumb = thumbEl(optionThumbUrl(cfg, curVal), optionLabel(cfg, curVal));
+    const chev = document.createElement("span");
+    chev.className = "chev";
+    chev.textContent = "▾";
+    trigger.append(trThumb, chev);
+
+    const grid = document.createElement("div");
+    grid.className = "grid";
+    grid.hidden = true;
+
+    const choose = (value: string): void => {
       if (cfg.key === FACE) {
-        faceShapeIdx = i;
+        faceShapeIdx = Math.max(0, faceShapes().indexOf(value));
         buildSteppers(); // part options depend on the shape — re-filter them
-      } else {
-        sel.set(cfg.key, opts[i] ?? "");
-        paint();
+        scheduleRender();
+        return;
       }
+      sel.set(cfg.key, value);
+      cur.textContent = optionLabel(cfg, value);
+      const nt = thumbEl(optionThumbUrl(cfg, value), optionLabel(cfg, value));
+      trigger.replaceChild(nt, trThumb);
+      trThumb = nt;
+      for (const c of grid.querySelectorAll<HTMLElement>(".cell"))
+        c.setAttribute("aria-selected", String(c.dataset.value === value));
+      closeAllGrids();
       scheduleRender();
     };
-    prev.addEventListener("click", () => step(-1));
-    next.addEventListener("click", () => step(1));
-    currentValue(cfg, opts); // seed default into `sel`
-    paint();
-  }
-}
 
-/** When tone changes, only the face thumbnail must re-resolve. */
-function refreshFaceThumb(): void {
-  const img = pickerBox.querySelector<HTMLImageElement>(`.stepper[data-key="${FACE}"] img`);
-  if (img) {
-    img.src = `${BASE}/Img/Avatar/${faceBaseCat()}/${currentFaceFile()}`;
-    img.alt = currentFaceFile();
+    let built = false;
+    const buildGrid = (): void => {
+      grid.replaceChildren();
+      for (const value of opts) {
+        const cell = document.createElement("button");
+        cell.type = "button";
+        cell.className = "cell";
+        cell.dataset.value = value;
+        cell.title = optionLabel(cfg, value);
+        cell.setAttribute("aria-selected", String(value === curVal));
+        cell.appendChild(thumbEl(optionThumbUrl(cfg, value), optionLabel(cfg, value)));
+        cell.addEventListener("click", () => choose(value));
+        grid.appendChild(cell);
+      }
+      built = true;
+    };
+
+    trigger.addEventListener("click", () => {
+      const willOpen = grid.hidden;
+      closeAllGrids();
+      if (willOpen) {
+        if (!built) buildGrid();
+        grid.hidden = false;
+        trigger.setAttribute("aria-expanded", "true");
+        wrap.classList.add("open");
+      }
+    });
+
+    wrap.append(head, trigger, grid);
+    pickerBox.appendChild(wrap);
+    currentValue(cfg, opts); // seed default into `sel`
   }
 }
 
