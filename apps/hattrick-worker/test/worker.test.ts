@@ -98,6 +98,29 @@ describe("worker asset proxy", () => {
     }
   });
 
+  it("serves a vendored face part from ASSETS without hitting upstream", async () => {
+    const orig = globalThis.fetch;
+    let upstreamCalled = false;
+    globalThis.fetch = (async () => {
+      upstreamCalled = true;
+      return new Response("should not be called", { status: 500 });
+    }) as typeof fetch;
+    const envWithAssets: Env = {
+      ...env,
+      ASSETS: {
+        fetch: async () => new Response("VENDORED", { headers: { "content-type": "image/png" } }),
+      },
+    };
+    try {
+      const res = await app.request("/team-photo/Img/Avatar/faces/f3b.png", {}, envWithAssets);
+      expect(res.status).toBe(200);
+      expect(await res.text()).toBe("VENDORED");
+      expect(upstreamCalled).toBe(false);
+    } finally {
+      globalThis.fetch = orig;
+    }
+  });
+
   it("falls back to a transparent PNG when a face part fails upstream", async () => {
     const orig = globalThis.fetch;
     let calls = 0;

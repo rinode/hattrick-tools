@@ -267,10 +267,16 @@ async function proxyAsset(upstream: string): Promise<Response> {
   return imageResponse(r);
 }
 
-// Face parts: /team-photo/Img/Avatar/… → www.hattrick.org/Img/Avatar/…
-// A failed layer must not blank the whole face (the renderer aborts the face if
-// any part errors), so fall back to a transparent pixel on upstream failure.
+// Face parts: /team-photo/Img/Avatar/… → a vendored copy if we have one,
+// otherwise proxied from www.hattrick.org/Img/Avatar/…. A failed layer must not
+// blank the whole face (the renderer aborts the face if any part errors), so
+// fall back to a transparent pixel on upstream failure.
 app.get(`${BASE}/Img/Avatar/*`, async (c) => {
+  // Prefer the vendored copy (served from the build) so it never touches upstream.
+  if (c.env.ASSETS) {
+    const asset = await c.env.ASSETS.fetch(c.req.raw);
+    if (asset.ok && (asset.headers.get("content-type") ?? "").startsWith("image/")) return asset;
+  }
   const path = new URL(c.req.url).pathname.slice(BASE.length); // "/Img/Avatar/…"
   const r = await fetchUpstream(`https://www.hattrick.org${path}`);
   if (!r.ok) {
