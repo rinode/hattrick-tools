@@ -30,6 +30,8 @@ export interface PhotoMeta {
   badgeScale?: number;
   /** Draw a drop shadow behind the badge. */
   badgeShadow?: boolean;
+  /** Draw a drop shadow behind the team-name header. Default true. */
+  headerShadow?: boolean;
   /** Font family for the team-name header. */
   headerFont?: string;
   /** Font weight for the team-name header (default 700). */
@@ -40,6 +42,8 @@ export interface PhotoMeta {
   headerSize?: number;
   /** Colour for the team-name header. */
   headerColor?: string;
+  /** Draw a drop shadow behind the player names. Default true. */
+  namesShadow?: boolean;
   /** Font family for the player names. */
   namesFont?: string;
   /** Font weight for the player names (default 500). */
@@ -77,6 +81,23 @@ function withShadow(ctx: CanvasRenderingContext2D, color: string, draw: () => vo
   ctx.shadowBlur = 3;
   ctx.shadowOffsetX = 1;
   ctx.shadowOffsetY = 1;
+  ctx.fillStyle = color;
+  draw();
+  ctx.restore();
+}
+
+// Fill with or without the drop shadow, depending on the toggle.
+function paintText(
+  ctx: CanvasRenderingContext2D,
+  color: string,
+  shadow: boolean,
+  draw: () => void,
+): void {
+  if (shadow) {
+    withShadow(ctx, color, draw);
+    return;
+  }
+  ctx.save();
   ctx.fillStyle = color;
   draw();
   ctx.restore();
@@ -241,7 +262,9 @@ export function composeTeamPhoto(
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.font = headerFontStr;
-      withShadow(ctx, headerColor, () => ctx.fillText(name, out.width / 2, headerH / 2));
+      paintText(ctx, headerColor, meta.headerShadow !== false, () =>
+        ctx.fillText(name, out.width / 2, headerH / 2),
+      );
     }
     if (hasCrest) {
       const cx = out.width - crestW - SIDE;
@@ -286,8 +309,9 @@ export function composeTeamPhoto(
       const total = widths.reduce((a, b) => a + b, 0) + NAME_GAP * Math.max(0, tokens.length - 1);
       const y = top + row * lineH + lineH / 2;
       let x = (out.width - total) / 2;
+      const namesShadow = meta.namesShadow !== false;
       tokens.forEach((t, i) => {
-        withShadow(ctx, namesColor, () => ctx.fillText(t, x, y));
+        paintText(ctx, namesColor, namesShadow, () => ctx.fillText(t, x, y));
         x += widths[i]! + NAME_GAP;
       });
     });

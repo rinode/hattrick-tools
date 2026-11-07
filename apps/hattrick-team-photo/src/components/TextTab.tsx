@@ -17,6 +17,8 @@ export function TextTab(props: {
   setHeaderSize: (n: number) => void;
   headerColor: string;
   setHeaderColor: (v: string) => void;
+  headerShadow: boolean;
+  setHeaderShadow: (v: boolean) => void;
   showNames: boolean;
   setShowNames: (v: boolean) => void;
   namesFont: string;
@@ -27,6 +29,8 @@ export function TextTab(props: {
   setNamesSize: (n: number) => void;
   namesColor: string;
   setNamesColor: (v: string) => void;
+  namesShadow: boolean;
+  setNamesShadow: (v: boolean) => void;
   fontUploads: { name: string; onRemove: () => void }[];
   onFontUpload: (files: FileList | null) => void;
 }): JSX.Element {
@@ -49,6 +53,7 @@ export function TextTab(props: {
           options={styleOpts(props.headerFont)}
         />
         <Slider label="Size" value={props.headerSize} onChange={props.setHeaderSize} min={28} max={80} />
+        <Check label="Drop shadow" checked={props.headerShadow} onChange={props.setHeaderShadow} />
       </Collapsible>
 
       <Collapsible title="Player names">
@@ -66,6 +71,7 @@ export function TextTab(props: {
           options={styleOpts(props.namesFont)}
         />
         <Slider label="Size" value={props.namesSize} onChange={props.setNamesSize} min={10} max={24} />
+        <Check label="Drop shadow" checked={props.namesShadow} onChange={props.setNamesShadow} />
       </Collapsible>
 
       <Collapsible title="Custom fonts">

@@ -107,10 +107,12 @@ export function App(): JSX.Element {
   const [headerStyle, setHeaderStyle] = useState("400:0");
   const [headerSize, setHeaderSize] = useState(52);
   const [headerColor, setHeaderColor] = useState("#ffffff");
+  const [headerShadow, setHeaderShadow] = useState(true);
   const [namesFont, setNamesFont] = useState("Roboto");
   const [namesStyle, setNamesStyle] = useState("400:0");
   const [namesSize, setNamesSize] = useState(15);
   const [namesColor, setNamesColor] = useState("#ffffff");
+  const [namesShadow, setNamesShadow] = useState(true);
 
   // Background
   const [bgColor, setBgColor] = useState("#3f7137");
@@ -271,11 +273,13 @@ export function App(): JSX.Element {
       headerItalic: hs.italic,
       headerSize,
       headerColor,
+      headerShadow,
       namesFont: namesFont || undefined,
       namesWeight: ns.weight,
       namesItalic: ns.italic,
       namesSize,
       namesColor,
+      namesShadow,
       bgFit: bgFit as PhotoMeta["bgFit"],
       bgPosition,
     };
@@ -318,10 +322,12 @@ export function App(): JSX.Element {
     headerStyle,
     headerSize,
     headerColor,
+    headerShadow,
     namesFont,
     namesStyle,
     namesSize,
     namesColor,
+    namesShadow,
     loading,
     tick,
     playersKit,
@@ -604,6 +610,8 @@ export function App(): JSX.Element {
                   setHeaderSize={setHeaderSize}
                   headerColor={headerColor}
                   setHeaderColor={setHeaderColor}
+                  headerShadow={headerShadow}
+                  setHeaderShadow={setHeaderShadow}
                   showNames={showNames}
                   setShowNames={setShowNames}
                   namesFont={namesFont}
@@ -614,6 +622,8 @@ export function App(): JSX.Element {
                   setNamesSize={setNamesSize}
                   namesColor={namesColor}
                   setNamesColor={setNamesColor}
+                  namesShadow={namesShadow}
+                  setNamesShadow={setNamesShadow}
                   fontUploads={fontUploads}
                   onFontUpload={(f) => void onFontUpload(f)}
                 />
