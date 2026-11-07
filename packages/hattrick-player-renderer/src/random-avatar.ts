@@ -9,6 +9,7 @@ import {
   neckForFaceShape,
   skinForTone,
 } from "./fullbody-tables.js";
+import { facePartNumbers, partOffset, type PartCategory } from "./parts-manifest.js";
 
 type Offsets = Record<string, [number, number]>;
 interface Catalog {
@@ -51,22 +52,35 @@ export function randomRenderInputs(opts: RandomAvatarOptions = {}): RenderInputs
   const tone = pick(CAT._tones.m.shapes[shape]!, rng);
   const faceFile = `f${shape}${tone}.png`;
 
-  const byTone = (category: string): string => {
-    const all = Object.keys(offsetsOf(category));
-    const toned = all.filter((k) => k.endsWith(`${tone}.png`));
-    return pick(toned.length ? toned : all, rng);
-  };
   const forShape = (category: string): string => {
     const all = Object.keys(offsetsOf(category));
     const matched = all.filter((k) => k.startsWith(`f${shape}h`));
     return pick(matched.length ? matched : all, rng);
   };
 
+  // Head parts (eyes/noses/mouths) are chosen from the manifest: it says which
+  // part numbers exist for this face shape and the exact offset to place each
+  // at. The variant file (e3a/e3b/…) comes from the catalog's known filenames;
+  // the offset comes from the manifest (per shape), not the flat catalog.
+  const headPart = (category: string, cat: PartCategory): AvatarPart => {
+    const files = Object.keys(offsetsOf(category));
+    const nums = facePartNumbers("m", shape, cat);
+    for (const n of nums.sort(() => rng() - 0.5)) {
+      const variants = files.filter((f) => new RegExp(`^${category[0]}${n}(?!\\d)`).test(f));
+      if (variants.length) {
+        const file = pick(variants, rng);
+        const off = partOffset("m", shape, cat, n) ?? offsetsOf(category)[file] ?? [5, 5];
+        return { url: `/Img/Avatar/${category}/${file}`, x: off[0], y: off[1] };
+      }
+    }
+    return part(category, pick(files, rng)); // fallback: any file, catalog offset
+  };
+
   const faceElements: AvatarPart[] = [
     part("faces", CAT.faces[faceFile] ? faceFile : pick(Object.keys(CAT.faces), rng)),
-    part("eyes", byTone("eyes")),
-    part("mouths", byTone("mouths")),
-    part("noses", pick(Object.keys(CAT.noses), rng)),
+    headPart("eyes", "e"),
+    headPart("noses", "n"),
+    headPart("mouths", "m"),
     part("hair", forShape("hair")),
   ];
 

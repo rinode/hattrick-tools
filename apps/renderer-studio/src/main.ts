@@ -3,8 +3,11 @@ import "./app.css";
 import {
   assetPathsForBody,
   BODY_TYPES,
+  facePartNumbers,
+  partOffset,
   renderInputs,
   type AvatarPart,
+  type PartCategory,
   type RenderInputs,
   type RenderOutput,
 } from "hattrick-player-renderer";
@@ -164,9 +167,22 @@ function matchesShape(name: string, shape: string): boolean {
 function optionsFor(cfg: PartCfg): string[] {
   if (cfg.key === FACE) return faceShapes();
   const shape = shapeOf();
-  const files = Object.keys(CATALOG[cfg.key] ?? {})
+  let files = Object.keys(CATALOG[cfg.key] ?? {})
     .filter((n) => isUniversal(n) || matchesShape(n, shape))
     .sort(naturalSort);
+  // Head parts (eyes/noses/mouths/goatees): the manifest knows exactly which
+  // part numbers exist for this face shape, so drop files that don't — a stepper
+  // should never land on a combo that renders nothing.
+  const headCat = HEAD_CAT[cfg.key];
+  if (headCat) {
+    const valid = new Set(facePartNumbers(gender, shape, headCat));
+    if (valid.size) {
+      files = files.filter((f) => {
+        const n = Number(f.match(/\d+/)?.[0]);
+        return Number.isNaN(n) || valid.has(n);
+      });
+    }
+  }
   return cfg.optional ? ["", ...files] : files;
 }
 
@@ -293,6 +309,18 @@ function refreshFaceThumb(): void {
   }
 }
 
+// Head-part category keys (either gender) → the manifest's category letter.
+// These are placed per face shape, so their offset comes from the manifest.
+const HEAD_CAT: Record<string, PartCategory> = {
+  eyes: "e",
+  noses: "n",
+  mouths: "m",
+  goatees: "g",
+  eyes_f: "e",
+  noses_f: "n",
+  mouths_f: "m",
+};
+
 // --- Assemble + render -------------------------------------------------------
 function buildFaceElements(): AvatarPart[] {
   const out: AvatarPart[] = [];
@@ -306,7 +334,13 @@ function buildFaceElements(): AvatarPart[] {
     }
     const value = sel.get(cfg.key) ?? "";
     if (!value) continue;
-    const off = CATALOG[cfg.key]?.[value] ?? [5, 5];
+    // Head parts: offset from the manifest for the current shape; others (hair,
+    // beards, behind-hair) fall back to the catalog's baked offset.
+    const headCat = HEAD_CAT[cfg.key];
+    const off =
+      (headCat && partOffset(gender, shapeOf(), headCat, value)) ??
+      CATALOG[cfg.key]?.[value] ??
+      [5, 5];
     out.push({ url: `/Img/Avatar/${cfg.key}/${value}`, x: off[0], y: off[1] });
   }
   return out;
