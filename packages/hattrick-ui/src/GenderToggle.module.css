@@ -27,6 +27,12 @@
   border-left: 1px solid var(--line);
 }
 
+/* Keep hover neutral; the global button:hover would otherwise fill an
+   unpressed segment green while its text stays dark. */
+.toggle:hover {
+  background: var(--surface);
+}
+
 .toggle[data-pressed] {
   background: var(--accent);
   color: #fff;
