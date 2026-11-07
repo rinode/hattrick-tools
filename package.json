@@ -20,6 +20,10 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "esbuild"
+    ],
+    "ignoredBuiltDependencies": [
+      "sharp",
+      "workerd"
     ]
   },
   "devDependencies": {

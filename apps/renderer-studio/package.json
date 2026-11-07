@@ -12,9 +12,16 @@
   },
   "dependencies": {
     "hattrick-player-renderer": "workspace:*",
-    "hattrick-theme": "workspace:*"
+    "hattrick-player-renderer-react": "workspace:*",
+    "hattrick-theme": "workspace:*",
+    "hattrick-ui": "workspace:*",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
   },
   "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
     "vite": "^6.0.7"
   }
 }

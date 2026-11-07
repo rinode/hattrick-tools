@@ -1,0 +1,26 @@
+.toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.toggle button {
+  margin: 0;
+  padding: 7px;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  font-family: "Rosetta", Verdana, sans-serif;
+  font-weight: 500;
+  font-size: 16px;
+  text-transform: lowercase;
+  cursor: pointer;
+}
+
+.toggle button[aria-pressed="true"] {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
