@@ -46,3 +46,8 @@
   font-size: 12px;
   color: var(--muted);
 }
+
+/* Lift the fixed positioner above the drawer (z 50) and header (z 60). */
+.positioner {
+  z-index: 70;
+}

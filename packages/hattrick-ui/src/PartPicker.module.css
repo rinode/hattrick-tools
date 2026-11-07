@@ -89,3 +89,8 @@
   border-color: var(--accent);
   box-shadow: inset 0 0 0 1px var(--accent);
 }
+
+/* Lift the fixed positioner above the drawer (z 50) and header (z 60). */
+.positioner {
+  z-index: 70;
+}

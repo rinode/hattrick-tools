@@ -73,3 +73,8 @@
 .item[data-selected] {
   font-weight: 600;
 }
+
+/* Lift the fixed positioner above the drawer (z 50) and header (z 60). */
+.positioner {
+  z-index: 70;
+}
