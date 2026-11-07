@@ -62,14 +62,8 @@ function setupTabs(): void {
 }
 setupTabs();
 
-const bodySel = el<HTMLSelectElement>("bodyType");
-for (const n of BODY_TYPES) {
-  const opt = document.createElement("option");
-  opt.value = String(n);
-  opt.textContent = `Body ${n}`;
-  if (n === 10) opt.selected = true;
-  bodySel.appendChild(opt);
-}
+const bodyBox = el<HTMLDivElement>("bodyPicker");
+let bodyType = 10;
 
 // ---------------------------------------------------------------------------
 // Model
@@ -256,99 +250,141 @@ function currentValue(cfg: PartCfg, opts: string[]): string {
   return v;
 }
 
-/** Collapse every open part grid (accordion: at most one open at a time). */
+/** Collapse every open picker grid anywhere (accordion: one open at a time). */
 function closeAllGrids(): void {
-  for (const g of pickerBox.querySelectorAll<HTMLElement>(".grid")) g.hidden = true;
-  for (const t of pickerBox.querySelectorAll(".picker-trigger")) t.setAttribute("aria-expanded", "false");
-  for (const w of pickerBox.querySelectorAll(".picker-item")) w.classList.remove("open");
+  for (const g of document.querySelectorAll<HTMLElement>(".picker .grid")) g.hidden = true;
+  for (const t of document.querySelectorAll(".picker .picker-trigger"))
+    t.setAttribute("aria-expanded", "false");
+  for (const w of document.querySelectorAll(".picker .picker-item")) w.classList.remove("open");
 }
 
-// Each part is a trigger showing the current selection; clicking it drops open a
-// scrollable grid of every valid option (thumbnails) to pick from. Grids build
-// lazily on first open. Options are the manifest-filtered set for the shape.
+interface PickerSpec {
+  label: string;
+  value: string; // the currently selected option
+  options: string[];
+  thumbUrlFor: (value: string) => string; // "" → an empty tile
+  labelFor: (value: string) => string;
+  onChoose: (value: string) => void;
+}
+
+// A reusable control: a trigger showing the current selection; clicking it drops
+// open a scrollable grid of every option (thumbnails) to pick from. The grid
+// builds lazily on first open; picking closes it (accordion across all pickers).
+function createPicker(spec: PickerSpec): HTMLDivElement {
+  const wrap = document.createElement("div");
+  wrap.className = "picker-item";
+
+  const head = document.createElement("div");
+  head.className = "picker-head";
+  const label = document.createElement("span");
+  label.textContent = spec.label;
+  const cur = document.createElement("span");
+  cur.className = "picker-cur";
+  cur.textContent = spec.labelFor(spec.value);
+  head.append(label, cur);
+
+  const trigger = document.createElement("button");
+  trigger.type = "button";
+  trigger.className = "picker-trigger";
+  trigger.setAttribute("aria-expanded", "false");
+  let trThumb = thumbEl(spec.thumbUrlFor(spec.value), spec.labelFor(spec.value));
+  const chev = document.createElement("span");
+  chev.className = "chev";
+  chev.textContent = "▾";
+  trigger.append(trThumb, chev);
+
+  const grid = document.createElement("div");
+  grid.className = "grid";
+  grid.hidden = true;
+
+  const choose = (value: string): void => {
+    cur.textContent = spec.labelFor(value);
+    const nt = thumbEl(spec.thumbUrlFor(value), spec.labelFor(value));
+    trigger.replaceChild(nt, trThumb);
+    trThumb = nt;
+    for (const c of grid.querySelectorAll<HTMLElement>(".cell"))
+      c.setAttribute("aria-selected", String(c.dataset.value === value));
+    closeAllGrids();
+    spec.onChoose(value);
+  };
+
+  let built = false;
+  const buildGrid = (): void => {
+    grid.replaceChildren();
+    for (const value of spec.options) {
+      const cell = document.createElement("button");
+      cell.type = "button";
+      cell.className = "cell";
+      cell.dataset.value = value;
+      cell.title = spec.labelFor(value);
+      cell.setAttribute("aria-selected", String(value === spec.value));
+      cell.appendChild(thumbEl(spec.thumbUrlFor(value), spec.labelFor(value)));
+      cell.addEventListener("click", () => choose(value));
+      grid.appendChild(cell);
+    }
+    built = true;
+  };
+
+  trigger.addEventListener("click", () => {
+    const willOpen = grid.hidden;
+    closeAllGrids();
+    if (willOpen) {
+      if (!built) buildGrid();
+      grid.hidden = false;
+      trigger.setAttribute("aria-expanded", "true");
+      wrap.classList.add("open");
+    }
+  });
+
+  wrap.append(head, trigger, grid);
+  return wrap;
+}
+
+// The part pickers. Options are the manifest-filtered set for the current shape;
+// picking a face shape re-filters every other part.
 function buildSteppers(): void {
   pickerBox.replaceChildren();
   for (const cfg of parts()) {
     const opts = optionsFor(cfg);
     const curVal = cfg.key === FACE ? shapeOf() : currentValue(cfg, opts);
-
-    const wrap = document.createElement("div");
-    wrap.className = "picker-item";
-    wrap.dataset.key = cfg.key;
-
-    const head = document.createElement("div");
-    head.className = "picker-head";
-    const label = document.createElement("span");
-    label.textContent = cfg.label;
-    const cur = document.createElement("span");
-    cur.className = "picker-cur";
-    cur.textContent = optionLabel(cfg, curVal);
-    head.append(label, cur);
-
-    const trigger = document.createElement("button");
-    trigger.type = "button";
-    trigger.className = "picker-trigger";
-    trigger.setAttribute("aria-expanded", "false");
-    let trThumb = thumbEl(optionThumbUrl(cfg, curVal), optionLabel(cfg, curVal));
-    const chev = document.createElement("span");
-    chev.className = "chev";
-    chev.textContent = "▾";
-    trigger.append(trThumb, chev);
-
-    const grid = document.createElement("div");
-    grid.className = "grid";
-    grid.hidden = true;
-
-    const choose = (value: string): void => {
-      if (cfg.key === FACE) {
-        faceShapeIdx = Math.max(0, faceShapes().indexOf(value));
-        buildSteppers(); // part options depend on the shape — re-filter them
-        scheduleRender();
-        return;
-      }
-      sel.set(cfg.key, value);
-      cur.textContent = optionLabel(cfg, value);
-      const nt = thumbEl(optionThumbUrl(cfg, value), optionLabel(cfg, value));
-      trigger.replaceChild(nt, trThumb);
-      trThumb = nt;
-      for (const c of grid.querySelectorAll<HTMLElement>(".cell"))
-        c.setAttribute("aria-selected", String(c.dataset.value === value));
-      closeAllGrids();
-      scheduleRender();
-    };
-
-    let built = false;
-    const buildGrid = (): void => {
-      grid.replaceChildren();
-      for (const value of opts) {
-        const cell = document.createElement("button");
-        cell.type = "button";
-        cell.className = "cell";
-        cell.dataset.value = value;
-        cell.title = optionLabel(cfg, value);
-        cell.setAttribute("aria-selected", String(value === curVal));
-        cell.appendChild(thumbEl(optionThumbUrl(cfg, value), optionLabel(cfg, value)));
-        cell.addEventListener("click", () => choose(value));
-        grid.appendChild(cell);
-      }
-      built = true;
-    };
-
-    trigger.addEventListener("click", () => {
-      const willOpen = grid.hidden;
-      closeAllGrids();
-      if (willOpen) {
-        if (!built) buildGrid();
-        grid.hidden = false;
-        trigger.setAttribute("aria-expanded", "true");
-        wrap.classList.add("open");
-      }
-    });
-
-    wrap.append(head, trigger, grid);
-    pickerBox.appendChild(wrap);
+    pickerBox.appendChild(
+      createPicker({
+        label: cfg.label,
+        value: curVal,
+        options: opts,
+        thumbUrlFor: (v) => optionThumbUrl(cfg, v),
+        labelFor: (v) => optionLabel(cfg, v),
+        onChoose: (v) => {
+          if (cfg.key === FACE) {
+            faceShapeIdx = Math.max(0, faceShapes().indexOf(v));
+            buildSteppers(); // part options depend on the shape — re-filter them
+          } else {
+            sel.set(cfg.key, v);
+          }
+          scheduleRender();
+        },
+      }),
+    );
     currentValue(cfg, opts); // seed default into `sel`
   }
+}
+
+// The body-type picker: each option's thumbnail is that body's outline SVG.
+function buildBodyPicker(): void {
+  bodyBox.replaceChildren();
+  bodyBox.appendChild(
+    createPicker({
+      label: "Body type",
+      value: String(bodyType),
+      options: BODY_TYPES.map(String),
+      thumbUrlFor: (v) => assetPathsForBody(Number(v), BASE).outlinePath,
+      labelFor: (v) => `body ${v}`,
+      onChoose: (v) => {
+        bodyType = Number(v);
+        scheduleRender();
+      },
+    }),
+  );
 }
 
 // Head-part category keys (either gender) → the manifest's category letter.
@@ -389,7 +425,6 @@ function buildFaceElements(): AvatarPart[] {
 }
 
 function gatherInputs(): RenderInputs {
-  const bodyType = Number(bodySel.value);
   const paths = assetPathsForBody(bodyType);
   return {
     faceElements: buildFaceElements(),
@@ -456,7 +491,7 @@ for (const btn of document.querySelectorAll<HTMLButtonElement>("#genderToggle bu
     resetForGender();
   });
 }
-for (const id of ["bodyType", "width", "kitJson", "neckPosition", "hairOffsetX", "hairOffsetY"]) {
+for (const id of ["width", "kitJson", "neckPosition", "hairOffsetX", "hairOffsetY"]) {
   el(id).addEventListener("input", scheduleRender);
   el(id).addEventListener("change", scheduleRender);
 }
@@ -503,4 +538,5 @@ el<HTMLButtonElement>("exportBtn").addEventListener("click", () => {
   link.click();
 });
 
+buildBodyPicker();
 resetForGender();
