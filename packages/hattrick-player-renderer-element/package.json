@@ -1,0 +1,18 @@
+{
+  "name": "hattrick-player-renderer-element",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Embeddable <ht-player-avatar> custom element: a self-contained bundle that draws a Hattrick full-body figure in Shadow DOM.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "hattrick-player-renderer": "workspace:*"
+  },
+  "devDependencies": {
+    "vite": "^6.0.7"
+  }
+}
