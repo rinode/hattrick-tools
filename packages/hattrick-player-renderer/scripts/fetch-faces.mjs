@@ -40,7 +40,9 @@ const vendorRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..", "vendo
 const SHAPES = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 const TONES = "abcdefghijkl".split(""); // face/hair/beard tone letters
 const PV = ["a", "b", "c"]; // eye/mouth part variants
-const NOSE_SUFFIX = ["", "mc", "md", "mb", "me", "ma"];
+// A nose is either plain (n{N}) or a mustache variant n{N}m{hairColor}; hair
+// colours run a..k, so the mustache noses do too (confirmed against the CDN).
+const NOSE_SUFFIX = ["", ..."abcdefghijk".split("").map((c) => `m${c}`)];
 const STYLE_MAX = 30; // hair/beard style numbers (generous; pruned by 404)
 const EYE_MAX = 80;
 const MOUTH_MAX = 70;
@@ -159,9 +161,12 @@ const noses = await download(
   "base noses",
 );
 
-// Phase 2: beard composites, derived only from base parts that exist.
+// Phase 2: beard composites, derived from the base parts that exist. Beard
+// noses are f{face}ben{N} (plain base noses only, no mustache-colour variants).
 const baseMouthNames = mouths.map((p) => p.replace(/^mouths\//, "").replace(/\.png$/, ""));
-const baseNoseNames = noses.map((p) => p.replace(/^noses\//, "").replace(/\.png$/, ""));
+const baseNoseNames = noses
+  .map((p) => p.replace(/^noses\//, "").replace(/\.png$/, ""))
+  .filter((n) => /^n\d+$/.test(n));
 const composites = [];
 for (const s of SHAPES) {
   for (const m of baseMouthNames) composites.push(`mouths/f${s}be${m}.png`);
