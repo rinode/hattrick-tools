@@ -44,3 +44,6 @@ coverage/
 
 # Cloudflare Worker combined asset build root
 apps/hattrick-worker/public/
+
+# Deploy token (never commit; keep it outside the repo too)
+.hattrick-deploy-token
