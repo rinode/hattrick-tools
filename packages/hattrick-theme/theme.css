@@ -71,8 +71,14 @@ body {
   letter-spacing: 0.2px;
   background: var(--bg);
   color: var(--ink);
-  /* App shell: header on top, main fills the rest. The page itself never
-     scrolls, so the header and drawer stay put; only the render area scrolls. */
+  overflow: hidden;
+}
+
+/* App shell: header on top, main fills the rest. The React root is the flex
+   column (header + main are mounted inside it, not directly in body), so the
+   height chain has to run through #root or main collapses to content height. */
+#root {
+  height: 100%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -163,7 +169,7 @@ label {
   color: var(--muted);
 }
 
-input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
 select,
 textarea {
   width: 100%;
