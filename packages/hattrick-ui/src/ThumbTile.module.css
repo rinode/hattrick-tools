@@ -1,0 +1,18 @@
+.thumb {
+  display: grid;
+  place-items: center;
+  height: var(--thumb-h, 56px);
+  border-radius: 6px;
+  background: repeating-conic-gradient(
+      #0000 0 25%,
+      color-mix(in srgb, var(--line) 60%, transparent) 0 50%
+    )
+    0 0 / 12px 12px;
+}
+
+.img {
+  max-height: calc(var(--thumb-h, 56px) - 4px);
+  max-width: 100%;
+  width: auto;
+  image-rendering: auto;
+}
