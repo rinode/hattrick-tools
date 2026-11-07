@@ -58,7 +58,7 @@ export function AppShell({ title, controls, children }: AppShellProps): JSX.Elem
         {children}
       </main>
       <footer className="app-footer">
-        Player and avatar graphics are the intellectual property of Hattrick, used under the{" "}
+        Player and avatar graphics are the intellectual property of Hattrick Ltd, used under the{" "}
         <a
           href="https://wiki.hattrick.org/wiki/Hattrick_Terms_of_Use"
           target="_blank"
