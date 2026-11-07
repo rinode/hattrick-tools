@@ -250,12 +250,15 @@ function currentValue(cfg: PartCfg, opts: string[]): string {
   return v;
 }
 
-/** Collapse every open picker grid anywhere (accordion: one open at a time). */
-function closeAllGrids(): void {
-  for (const g of document.querySelectorAll<HTMLElement>(".picker .grid")) g.hidden = true;
-  for (const t of document.querySelectorAll(".picker .picker-trigger"))
-    t.setAttribute("aria-expanded", "false");
-  for (const w of document.querySelectorAll(".picker .picker-item")) w.classList.remove("open");
+// The currently open popover's close function, so opening one (or any rebuild)
+// closes any other first.
+let activeClose: (() => void) | null = null;
+function closeActivePopover(): void {
+  if (activeClose) {
+    const f = activeClose;
+    activeClose = null;
+    f();
+  }
 }
 
 interface PickerSpec {
@@ -267,9 +270,10 @@ interface PickerSpec {
   onChoose: (value: string) => void;
 }
 
-// A reusable control: a trigger showing the current selection; clicking it drops
-// open a scrollable grid of every option (thumbnails) to pick from. The grid
-// builds lazily on first open; picking closes it (accordion across all pickers).
+// A reusable control: a trigger showing the current selection; clicking it opens
+// a floating, scrollable grid of every option (thumbnails) that overlays the
+// page (appended to <body>, positioned under the trigger) rather than pushing
+// the panel open. Picking, clicking away, scrolling or Escape closes it.
 function createPicker(spec: PickerSpec): HTMLDivElement {
   const wrap = document.createElement("div");
   wrap.className = "picker-item";
@@ -297,6 +301,53 @@ function createPicker(spec: PickerSpec): HTMLDivElement {
   grid.className = "grid";
   grid.hidden = true;
 
+  const onDocPointer = (e: PointerEvent): void => {
+    const target = e.target as Node;
+    if (!grid.contains(target) && !trigger.contains(target)) closeGrid();
+  };
+  const onKey = (e: KeyboardEvent): void => {
+    if (e.key === "Escape") closeGrid();
+  };
+
+  function positionGrid(): void {
+    const r = trigger.getBoundingClientRect();
+    grid.style.left = `${r.left}px`;
+    grid.style.top = `${r.bottom + 4}px`;
+    grid.style.width = `${r.width}px`;
+    // Cap height to the space below the trigger so it never runs off-screen.
+    grid.style.maxHeight = `${Math.max(140, window.innerHeight - r.bottom - 16)}px`;
+  }
+
+  function closeGrid(): void {
+    if (grid.hidden) return;
+    grid.hidden = true;
+    grid.remove();
+    trigger.setAttribute("aria-expanded", "false");
+    wrap.classList.remove("open");
+    document.removeEventListener("pointerdown", onDocPointer, true);
+    window.removeEventListener("scroll", closeGrid, true);
+    window.removeEventListener("resize", closeGrid);
+    document.removeEventListener("keydown", onKey, true);
+    if (activeClose === closeGrid) activeClose = null;
+  }
+
+  let built = false;
+  function openGrid(): void {
+    closeActivePopover();
+    if (!built) buildGrid();
+    document.body.appendChild(grid);
+    grid.hidden = false;
+    positionGrid();
+    trigger.setAttribute("aria-expanded", "true");
+    wrap.classList.add("open");
+    activeClose = closeGrid;
+    // Defer so the opening click itself doesn't immediately close it.
+    setTimeout(() => document.addEventListener("pointerdown", onDocPointer, true), 0);
+    window.addEventListener("scroll", closeGrid, true);
+    window.addEventListener("resize", closeGrid);
+    document.addEventListener("keydown", onKey, true);
+  }
+
   const choose = (value: string): void => {
     cur.textContent = spec.labelFor(value);
     const nt = thumbEl(spec.thumbUrlFor(value), spec.labelFor(value));
@@ -304,12 +355,11 @@ function createPicker(spec: PickerSpec): HTMLDivElement {
     trThumb = nt;
     for (const c of grid.querySelectorAll<HTMLElement>(".cell"))
       c.setAttribute("aria-selected", String(c.dataset.value === value));
-    closeAllGrids();
+    closeGrid();
     spec.onChoose(value);
   };
 
-  let built = false;
-  const buildGrid = (): void => {
+  function buildGrid(): void {
     grid.replaceChildren();
     for (const value of spec.options) {
       const cell = document.createElement("button");
@@ -323,26 +373,21 @@ function createPicker(spec: PickerSpec): HTMLDivElement {
       grid.appendChild(cell);
     }
     built = true;
-  };
+  }
 
   trigger.addEventListener("click", () => {
-    const willOpen = grid.hidden;
-    closeAllGrids();
-    if (willOpen) {
-      if (!built) buildGrid();
-      grid.hidden = false;
-      trigger.setAttribute("aria-expanded", "true");
-      wrap.classList.add("open");
-    }
+    if (wrap.classList.contains("open")) closeGrid();
+    else openGrid();
   });
 
-  wrap.append(head, trigger, grid);
+  wrap.append(head, trigger);
   return wrap;
 }
 
 // The part pickers. Options are the manifest-filtered set for the current shape;
 // picking a face shape re-filters every other part.
 function buildSteppers(): void {
+  closeActivePopover();
   pickerBox.replaceChildren();
   for (const cfg of parts()) {
     const opts = optionsFor(cfg);
@@ -371,6 +416,7 @@ function buildSteppers(): void {
 
 // The body-type picker: each option's thumbnail is that body's outline SVG.
 function buildBodyPicker(): void {
+  closeActivePopover();
   bodyBox.replaceChildren();
   bodyBox.appendChild(
     createPicker({

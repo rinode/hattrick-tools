@@ -132,14 +132,25 @@ details > summary {
   transform: rotate(180deg);
 }
 
+/* Floating option grid: overlays the page, anchored under its trigger (left/top/
+   width set in JS). Appended to <body>, so it escapes the drawer's clipping. */
 .grid {
+  position: fixed;
+  z-index: 50;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
   gap: 6px;
-  max-height: 240px;
+  max-height: 50vh;
   overflow-y: auto;
   padding: 8px;
-  border-top: 1px solid var(--line);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+}
+
+.grid[hidden] {
+  display: none;
 }
 
 .cell {
