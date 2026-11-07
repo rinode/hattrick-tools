@@ -15,7 +15,7 @@
   width: auto;
 }
 
-.swatch[aria-pressed="true"] {
+.swatch[data-pressed] {
   border-color: var(--ink);
   box-shadow:
     0 0 0 2px var(--panel),

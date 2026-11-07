@@ -1,0 +1,11 @@
+.pickers {
+  display: grid;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}

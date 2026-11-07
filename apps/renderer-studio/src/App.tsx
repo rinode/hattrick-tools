@@ -1,12 +1,5 @@
 import { type JSX, useMemo, useRef, useState } from "react";
-import {
-  AppShell,
-  GenderToggle,
-  PartPicker,
-  type PickerOption,
-  SkinSwatches,
-  Tabs,
-} from "hattrick-ui";
+import { AppShell, type PickerOption, Tabs } from "hattrick-ui";
 import { AvatarFigure } from "hattrick-player-renderer-react";
 import { BODY_TYPES, type RenderOutput } from "hattrick-player-renderer";
 import {
@@ -21,6 +14,10 @@ import {
   partsFor,
   toneTable,
 } from "./studio-model.js";
+import { AppearanceTab, type PartData } from "./components/AppearanceTab.js";
+import { BodyTab } from "./components/BodyTab.js";
+import { ExportTab } from "./components/ExportTab.js";
+import styles from "./App.module.css";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 const ENGINE = {
@@ -53,14 +50,18 @@ export function App(): JSX.Element {
 
   // Effective selection (fall back to a valid default) + the picker option lists.
   const effSel: Record<string, string> = {};
-  const pickers = cfgs.map((cfg) => {
+  const parts: PartData[] = cfgs.map((cfg) => {
     if (cfg.key === FACE) {
-      const options: PickerOption[] = shapes.map((s) => ({
-        value: s,
-        label: `shape ${s}`,
-        thumbUrl: optionThumbUrl(BASE, gender, cfg, tone, s),
-      }));
-      return { cfg, value: shape, options };
+      return {
+        key: cfg.key,
+        label: cfg.label,
+        value: shape,
+        options: shapes.map((sVal) => ({
+          value: sVal,
+          label: `shape ${sVal}`,
+          thumbUrl: optionThumbUrl(BASE, gender, cfg, tone, sVal),
+        })),
+      };
     }
     const files = optionsFor(gender, shape, cfg);
     const raw = sel[cfg.key];
@@ -75,7 +76,7 @@ export function App(): JSX.Element {
         thumbUrl: optionThumbUrl(BASE, gender, cfg, tone, f),
       })),
     ];
-    return { cfg, value, options };
+    return { key: cfg.key, label: cfg.label, value, options };
   });
 
   const inputs = gatherInputs(
@@ -133,120 +134,55 @@ export function App(): JSX.Element {
     link.click();
   }
 
-  const appearance = (
-    <>
-      <label>Gender</label>
-      <GenderToggle value={gender} onChange={switchGender} />
-
-      <label>Skin tone (sets face variant + body colour)</label>
-      <SkinSwatches
-        tones={tones.order.map((code) => ({ code, hex: tones.hex[code] ?? "#000" }))}
-        value={tone}
-        onChange={setTone}
-      />
-
-      <label>Parts</label>
-      <button type="button" className="secondary" onClick={randomize}>
-        Randomize
-      </button>
-      <div className="picker">
-        {pickers.map(({ cfg, value, options }) => (
-          <PartPicker
-            key={cfg.key}
-            label={cfg.label}
-            value={value}
-            options={options}
-            onChange={(v) => choose(cfg.key, v)}
-          />
-        ))}
-      </div>
-    </>
-  );
-
-  const body = (
-    <>
-      <label>Body type (1-12)</label>
-      <div className="picker">
-        <PartPicker
-          label="Body type"
-          value={String(bodyType)}
-          options={bodyOptions}
-          onChange={(v) => setBodyType(Number(v))}
-        />
-      </div>
-
-      <label htmlFor="width">Width (px)</label>
-      <input
-        id="width"
-        type="number"
-        min={40}
-        max={800}
-        value={width}
-        onChange={(e) => setWidth(Number(e.target.value))}
-      />
-
-      <div className="row">
-        <div>
-          <label htmlFor="neckPosition">Neck position</label>
-          <input
-            id="neckPosition"
-            type="number"
-            value={neckPosition}
-            onChange={(e) => setNeckPosition(Number(e.target.value))}
-          />
-        </div>
-        <div>
-          <label htmlFor="hairOffsetX">Hair offset X</label>
-          <input
-            id="hairOffsetX"
-            type="number"
-            value={hairOffsetX}
-            onChange={(e) => setHairOffsetX(Number(e.target.value))}
-          />
-        </div>
-      </div>
-
-      <label htmlFor="hairOffsetY">Hair offset Y</label>
-      <input
-        id="hairOffsetY"
-        type="number"
-        value={hairOffsetY}
-        onChange={(e) => setHairOffsetY(Number(e.target.value))}
-      />
-
-      <label htmlFor="kitJson">Kit JSON URL (optional)</label>
-      <input
-        id="kitJson"
-        type="text"
-        value={kitJson}
-        onChange={(e) => setKitJson(e.target.value)}
-      />
-    </>
-  );
-
-  const exportTab = (
-    <>
-      <button type="button" className="secondary" onClick={exportPng}>
-        PNG
-      </button>
-      <div id="status">{status}</div>
-    </>
-  );
-
   return (
     <AppShell
       title="Player Renderer"
       controls={
         <Tabs
           tabs={[
-            { id: "appearance", label: "Appearance", content: appearance },
-            { id: "body", label: "Body & layout", content: body },
-            { id: "export", label: "Export", content: exportTab },
+            {
+              id: "appearance",
+              label: "Appearance",
+              content: (
+                <AppearanceTab
+                  gender={gender}
+                  onGender={switchGender}
+                  tones={tones.order.map((code) => ({ code, hex: tones.hex[code] ?? "#000" }))}
+                  tone={tone}
+                  onTone={setTone}
+                  onRandomize={randomize}
+                  parts={parts}
+                  onChoose={choose}
+                />
+              ),
+            },
+            {
+              id: "body",
+              label: "Body & layout",
+              content: (
+                <BodyTab
+                  bodyValue={String(bodyType)}
+                  bodyOptions={bodyOptions}
+                  onBody={(v) => setBodyType(Number(v))}
+                  width={width}
+                  setWidth={setWidth}
+                  neck={neckPosition}
+                  setNeck={setNeckPosition}
+                  hairX={hairOffsetX}
+                  setHairX={setHairOffsetX}
+                  hairY={hairOffsetY}
+                  setHairY={setHairOffsetY}
+                  kitJson={kitJson}
+                  setKitJson={setKitJson}
+                />
+              ),
+            },
+            { id: "export", label: "Export", content: <ExportTab onExport={exportPng} status={status} /> },
           ]}
         />
       }
     >
-      <div id="stage" className="panel">
+      <div className={styles.stage}>
         <AvatarFigure
           inputs={inputs}
           engine={ENGINE}
@@ -258,9 +194,7 @@ export function App(): JSX.Element {
                 : `${out.naturalWidth}×${out.naturalHeight}`;
             setStatus(`Rendered ${size}.`);
           }}
-          onError={(err) =>
-            setStatus("Error: " + (err instanceof Error ? err.message : String(err)))
-          }
+          onError={(err) => setStatus("Error: " + (err instanceof Error ? err.message : String(err)))}
         />
       </div>
     </AppShell>

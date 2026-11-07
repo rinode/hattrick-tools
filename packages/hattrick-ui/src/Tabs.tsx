@@ -1,4 +1,6 @@
-import { type JSX, type ReactNode, useState } from "react";
+import { type JSX, type ReactNode } from "react";
+import { Tabs as Base } from "@base-ui/react/tabs";
+import styles from "./Tabs.module.css";
 
 export interface TabDef {
   id: string;
@@ -6,34 +8,22 @@ export interface TabDef {
   content: ReactNode;
 }
 
-/**
- * A segmented tab bar plus panels, using the shared theme's global classes
- * (.tabbar, .tab-btn, .tab-panel). The active panel is kept mounted so inputs
- * don't lose state when switching tabs.
- */
+/** A segmented tab bar plus panels, built on Base UI Tabs. */
 export function Tabs({ tabs }: { tabs: TabDef[] }): JSX.Element {
-  const [active, setActive] = useState(tabs[0]?.id ?? "");
   return (
-    <>
-      <div className="tabbar" role="tablist">
+    <Base.Root className={styles.root} defaultValue={tabs[0]?.id}>
+      <Base.List className={styles.list}>
         {tabs.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            role="tab"
-            aria-selected={t.id === active}
-            className={`tab-btn${t.id === active ? " active" : ""}`}
-            onClick={() => setActive(t.id)}
-          >
+          <Base.Tab key={t.id} value={t.id} className={styles.tab}>
             {t.label}
-          </button>
+          </Base.Tab>
         ))}
-      </div>
+      </Base.List>
       {tabs.map((t) => (
-        <div key={t.id} role="tabpanel" className={`tab-panel${t.id === active ? " active" : ""}`}>
+        <Base.Panel key={t.id} value={t.id} className={styles.panel}>
           {t.content}
-        </div>
+        </Base.Panel>
       ))}
-    </>
+    </Base.Root>
   );
 }

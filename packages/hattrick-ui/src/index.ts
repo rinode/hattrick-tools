@@ -4,3 +4,8 @@ export { AppShell, type AppShellProps } from "./AppShell.js";
 export { Tabs, type TabDef } from "./Tabs.js";
 export { GenderToggle, type Gender } from "./GenderToggle.js";
 export { SkinSwatches, type ToneSwatch } from "./SkinSwatches.js";
+export { Slider } from "./Slider.js";
+export { Check } from "./Check.js";
+export { Swatch } from "./Swatch.js";
+export { NumberField } from "./NumberField.js";
+export { Select, type SelectOption } from "./Select.js";

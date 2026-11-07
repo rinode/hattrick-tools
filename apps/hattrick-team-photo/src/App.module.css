@@ -1,0 +1,30 @@
+.stage {
+  position: relative;
+  height: 100%;
+  overflow: auto;
+  background: var(--panel);
+  padding: 16px;
+}
+
+.host {
+  min-height: 100%;
+}
+
+/* Spinner overlay while figures render — covers the stage without
+   replacing the canvas host, so the Loader never remounts. */
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--panel);
+}
+
+/* Centered message shown in the render area (e.g. no players selected). */
+.msg {
+  display: grid;
+  place-items: center;
+  min-height: 440px;
+  color: var(--muted);
+  font-size: 13px;
+}

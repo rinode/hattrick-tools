@@ -1,0 +1,11 @@
+.stage {
+  height: 100%;
+  overflow: auto;
+  display: grid;
+  place-items: center;
+  background: repeating-conic-gradient(
+      #0000 0 25%,
+      color-mix(in srgb, var(--line) 50%, transparent) 0 50%
+    )
+    0 0 / 24px 24px;
+}

@@ -1,5 +1,4 @@
 import "hattrick-theme/theme.css";
-import "./studio.css";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App.js";

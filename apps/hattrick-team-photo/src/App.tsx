@@ -11,15 +11,23 @@ import {
 import { composeTeamPhoto, naturalSize, type PhotoMeta } from "./compose.js";
 import { computeLayout, DEFAULT_LAYOUT, type LayoutOptions } from "./layout.js";
 import { DEFAULT_FRONT, stairRowRise, stairTileUrl } from "./stairs.js";
-import { FontCombo } from "./FontCombo.js";
 import {
   customFonts,
   defaultStyle,
   ensureVariant,
   loadFontList,
   styleParts,
-  variantsFor,
 } from "./fonts.js";
+import { Loader } from "./components/Loader.js";
+import { SquadTab, type Role, type SquadRow } from "./components/SquadTab.js";
+import { LayoutTab } from "./components/LayoutTab.js";
+import { ShowTab } from "./components/ShowTab.js";
+import { TextTab } from "./components/TextTab.js";
+import { BackgroundTab } from "./components/BackgroundTab.js";
+import { LogoTab } from "./components/LogoTab.js";
+import { KitsTab } from "./components/KitsTab.js";
+import { ExportTab } from "./components/ExportTab.js";
+import styles from "./App.module.css";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 const API_BASE = (import.meta.env.VITE_API_BASE ?? BASE).replace(/\/$/, "");
@@ -29,14 +37,8 @@ const ENGINE = {
   fullBodiesUrl: `${BASE}/Club/Players/Avatars/HT.FullBodies.js`,
 };
 
-type Role = "player" | "keeper" | "staff";
-interface SquadItem {
-  id: number;
-  number: number;
-  name: string;
-  enabled: boolean;
+interface SquadItem extends SquadRow {
   staff: boolean;
-  role: Role;
   inputs: RenderInputs;
 }
 interface SquadPlayer {
@@ -70,13 +72,6 @@ function loadImage(src: string | null): Promise<HTMLImageElement | null> {
   });
 }
 
-const KIT_OPTS: [string, string][] = [
-  ["home", "Home"],
-  ["away", "Away"],
-  ["default", "Hattrick default"],
-  ["blank", "Blank"],
-];
-
 export function App(): JSX.Element {
   // Squad + roster
   const [squad, setSquad] = useState<SquadItem[]>([]);
@@ -84,7 +79,7 @@ export function App(): JSX.Element {
   const [crest, setCrest] = useState<HTMLImageElement | null>(null);
   const kitsRef = useRef<{ home: string | null; away: string | null }>({ home: null, away: null });
   const [teams, setTeams] = useState<{ id: number; name: string; primary: boolean }[]>([]);
-  const [authHtml, setAuthHtml] = useState<"connected" | "demo" | "">("");
+  const [authState, setAuthState] = useState<"connected" | "demo" | "">("");
 
   // Layout
   const [rows, setRows] = useState(3);
@@ -100,6 +95,7 @@ export function App(): JSX.Element {
 
   // Text
   const [allFonts, setAllFonts] = useState<string[]>([]);
+  const [uploadedFonts, setUploadedFonts] = useState<string[]>([]);
   const [headerFont, setHeaderFont] = useState("Rosetta");
   const [headerStyle, setHeaderStyle] = useState("400:0");
   const [headerSize, setHeaderSize] = useState(52);
@@ -224,12 +220,12 @@ export function App(): JSX.Element {
   const recompose = useCallback(() => {
     const stage = stageRef.current;
     if (!stage) return;
-    if (loading > 0) return; // the loader effect owns the stage while rendering
+    if (loading > 0) return; // the loader overlay owns the stage while rendering
     const enabled = squad.filter((i) => i.enabled);
     if (enabled.length === 0) {
       composed.current = null;
       const empty = document.createElement("div");
-      empty.className = "stage-msg";
+      empty.className = styles.msg ?? "";
       empty.textContent = squad.length ? "No players selected." : "Loading…";
       stage.replaceChildren(empty);
       return;
@@ -331,15 +327,6 @@ export function App(): JSX.Element {
     recompose();
   }, [recompose]);
 
-  // --- Loader in the stage while figures render. ----------------------------
-  useEffect(() => {
-    const stage = stageRef.current;
-    if (!stage || loading === 0) return;
-    stage.innerHTML =
-      `<div class="loader"><div class="spinner-wrap"><div class="spinner"></div>` +
-      `<div class="loader-count">${loading}/${total}</div></div></div>`;
-  }, [loading, total]);
-
   // --- Roster loading. ------------------------------------------------------
   async function loadRoster(teamId?: number): Promise<void> {
     const url = `${API_BASE}/api/squad${teamId ? `?teamId=${teamId}` : ""}`;
@@ -413,11 +400,11 @@ export function App(): JSX.Element {
         /* backend unreachable */
       }
       if (!connected) {
-        setAuthHtml("demo");
+        setAuthState("demo");
         await loadDemo();
         return;
       }
-      setAuthHtml("connected");
+      setAuthState("connected");
       try {
         const res = await fetch(`${API_BASE}/api/teams`, { credentials: "include" });
         if (res.ok) {
@@ -434,6 +421,9 @@ export function App(): JSX.Element {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const reportError = (err: unknown): void =>
+    setStatus("Error: " + (err instanceof Error ? err.message : String(err)));
+
   // --- Squad list ops. ------------------------------------------------------
   const toggle = (id: number): void =>
     setSquad((s) => s.map((i) => (i.id === id ? { ...i, enabled: !i.enabled } : i)));
@@ -447,6 +437,11 @@ export function App(): JSX.Element {
       [next[index], next[to]] = [next[to]!, next[index]!];
       return next;
     });
+  const disconnect = (): void => {
+    fetch(`${API_BASE}/api/auth/logout`, { method: "POST", credentials: "include" }).finally(() =>
+      location.reload(),
+    );
+  };
 
   // --- File uploads. --------------------------------------------------------
   function onImageUpload(
@@ -471,8 +466,16 @@ export function App(): JSX.Element {
     }
     setCustomKits((c) => ({ ...c, ...add }));
   }
+  function removeKit(name: string): void {
+    setCustomKits((c) => {
+      const next = { ...c };
+      delete next[name];
+      return next;
+    });
+  }
   async function onFontUpload(files: FileList | null): Promise<void> {
     if (!files) return;
+    const added: string[] = [];
     for (const file of Array.from(files)) {
       const family = file.name.replace(/\.(ttf|otf|woff2?)$/i, "").trim() || "Custom font";
       try {
@@ -480,11 +483,18 @@ export function App(): JSX.Element {
         await face.load();
         document.fonts.add(face);
         customFonts.add(family);
+        added.push(family);
       } catch (err) {
         console.error("font upload", err);
       }
     }
+    setUploadedFonts((u) => [...new Set([...u, ...added])]);
     setAllFonts((f) => [...new Set([...customFonts, ...f])]);
+  }
+  function removeFont(name: string): void {
+    customFonts.delete(name);
+    setUploadedFonts((u) => u.filter((n) => n !== name));
+    setAllFonts((f) => f.filter((n) => n !== name));
   }
 
   function pickHeaderFont(family: string): void {
@@ -501,6 +511,16 @@ export function App(): JSX.Element {
     const { weight, italic } = styleParts(v);
     void ensureVariant(family, weight, italic).then(() => setTick((t) => t + 1));
   }
+  function pickHeaderStyle(v: string): void {
+    setHeaderStyle(v);
+    const { weight, italic } = styleParts(v);
+    void ensureVariant(headerFont, weight, italic).then(() => setTick((t) => t + 1));
+  }
+  function pickNamesStyle(v: string): void {
+    setNamesStyle(v);
+    const { weight, italic } = styleParts(v);
+    void ensureVariant(namesFont, weight, italic).then(() => setTick((t) => t + 1));
+  }
 
   function exportPng(): void {
     if (!composed.current) {
@@ -513,390 +533,7 @@ export function App(): JSX.Element {
     link.click();
   }
 
-  const kitSelect = (value: string, set: (v: string) => void): JSX.Element => (
-    <select className="font-style" value={value} onChange={(e) => set(e.target.value)}>
-      {KIT_OPTS.map(([v, t]) => (
-        <option key={v} value={v}>
-          {t}
-        </option>
-      ))}
-      {Object.keys(customKits).map((n) => (
-        <option key={n} value={`upload:${n}`}>
-          Uploaded: {n}
-        </option>
-      ))}
-    </select>
-  );
-
-  // --- Tab content. ---------------------------------------------------------
-  const squadTab = (
-    <div
-      className="section-body"
-      style={{ display: "flex", flexDirection: "column", minHeight: "100%" }}
-    >
-      <div style={{ marginBottom: 12 }}>
-        {authHtml === "demo" && (
-          <>
-            <a href={`${API_BASE}/api/auth/login`} style={{ display: "block" }}>
-              <button type="button">Connect</button>
-            </a>
-            <p className="demo-note">Not connected. Showing a random demo squad.</p>
-          </>
-        )}
-        {authHtml === "connected" && (
-          <span>
-            Connected ·{" "}
-            <a
-              href="#"
-              style={{ color: "var(--accent)" }}
-              onClick={(e) => {
-                e.preventDefault();
-                fetch(`${API_BASE}/api/auth/logout`, {
-                  method: "POST",
-                  credentials: "include",
-                }).finally(() => location.reload());
-              }}
-            >
-              disconnect
-            </a>
-          </span>
-        )}
-      </div>
-      {teams.length > 1 && (
-        <>
-          <label htmlFor="team">Team</label>
-          <select
-            id="team"
-            onChange={(e) =>
-              loadRoster(Number(e.target.value)).catch((err) =>
-                setStatus("Error: " + (err instanceof Error ? err.message : String(err))),
-              )
-            }
-          >
-            {teams.map((t) => (
-              <option key={t.id} value={t.id} selected={t.primary}>
-                {t.name}
-              </option>
-            ))}
-          </select>
-        </>
-      )}
-      <label>
-        Squad <span className="team-name">{teamName}</span>
-      </label>
-      <div className="squad">
-        {squad.map((item, i) => (
-          <div key={item.id} className={`squad-item${item.enabled ? "" : " disabled"}`}>
-            <input type="checkbox" checked={item.enabled} onChange={() => toggle(item.id)} />
-            <span className="name">{item.number ? `${item.number}. ${item.name}` : item.name}</span>
-            <select
-              className="role"
-              title="Kit group"
-              value={item.role}
-              onChange={(e) => setRole(item.id, e.target.value as Role)}
-            >
-              <option value="player">Player</option>
-              <option value="keeper">Goalkeeper</option>
-              <option value="staff">Staff</option>
-            </select>
-            <button type="button" className="mv" disabled={i === 0} onClick={() => move(i, -1)}>
-              ↑
-            </button>
-            <button
-              type="button"
-              className="mv"
-              disabled={i === squad.length - 1}
-              onClick={() => move(i, 1)}
-            >
-              ↓
-            </button>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-
-  const slider = (
-    label: string,
-    value: number,
-    set: (n: number) => void,
-    min: number,
-    max: number,
-    suffix = "",
-  ): JSX.Element => (
-    <>
-      <label>{label}</label>
-      <div className="slider-row">
-        <input
-          type="range"
-          min={min}
-          max={max}
-          step={1}
-          value={value}
-          onChange={(e) => set(Number(e.target.value))}
-        />
-        <span className="slider-val">
-          {value}
-          {suffix}
-        </span>
-      </div>
-    </>
-  );
-
-  const check = (label: string, value: boolean, set: (b: boolean) => void): JSX.Element => (
-    <div className="check">
-      <input type="checkbox" checked={value} onChange={(e) => set(e.target.checked)} />
-      <label style={{ margin: 0 }}>{label}</label>
-    </div>
-  );
-
-  const layoutTab = (
-    <div className="section-body">
-      {slider("Rows", rows, setRows, 1, Math.max(8, squad.length || 8))}
-      {slider("Row height", stairH, setStairH, 20, 90)}
-      <label>Step top colour</label>
-      <input
-        type="color"
-        className="swatch"
-        value={stairTop}
-        onChange={(e) => setStairTop(e.target.value)}
-      />
-      <label>Step front colour</label>
-      <input
-        type="color"
-        className="swatch"
-        value={stairFront}
-        onChange={(e) => setStairFront(e.target.value)}
-      />
-      {check("Stagger rows", stagger, setStagger)}
-    </div>
-  );
-
-  const showTab = (
-    <div className="section-body">
-      {check("Team name", showName, setShowName)}
-      {check("Player names", showNames, setShowNames)}
-      {check("Stairs", showStairs, setShowStairs)}
-    </div>
-  );
-
-  const styleSelect = (
-    family: string,
-    value: string,
-    set: (v: string) => void,
-    role: "header" | "names",
-  ): JSX.Element => (
-    <select
-      className="font-style"
-      value={value}
-      onChange={(e) => {
-        set(e.target.value);
-        const { weight, italic } = styleParts(e.target.value);
-        void ensureVariant(family, weight, italic).then(() => setTick((t) => t + 1));
-      }}
-    >
-      {variantsFor(family).map((v) => (
-        <option key={v.value} value={v.value}>
-          {v.label}
-        </option>
-      ))}
-    </select>
-  );
-
-  const textTab = (
-    <div className="section-body">
-      <label>Team name font</label>
-      <div className="slider-row">
-        <FontCombo value={headerFont} fonts={allFonts} onPick={pickHeaderFont} />
-        <input
-          type="color"
-          className="swatch swatch-sm"
-          value={headerColor}
-          onChange={(e) => setHeaderColor(e.target.value)}
-        />
-      </div>
-      {styleSelect(headerFont, headerStyle, setHeaderStyle, "header")}
-      <div className="slider-row" style={{ marginTop: 6 }}>
-        <input
-          type="range"
-          min={28}
-          max={80}
-          value={headerSize}
-          onChange={(e) => setHeaderSize(Number(e.target.value))}
-        />
-        <span className="slider-val">{headerSize}</span>
-      </div>
-
-      <label>Player names font</label>
-      <div className="slider-row">
-        <FontCombo value={namesFont} fonts={allFonts} onPick={pickNamesFont} />
-        <input
-          type="color"
-          className="swatch swatch-sm"
-          value={namesColor}
-          onChange={(e) => setNamesColor(e.target.value)}
-        />
-      </div>
-      {styleSelect(namesFont, namesStyle, setNamesStyle, "names")}
-      <div className="slider-row" style={{ marginTop: 6 }}>
-        <input
-          type="range"
-          min={10}
-          max={24}
-          value={namesSize}
-          onChange={(e) => setNamesSize(Number(e.target.value))}
-        />
-        <span className="slider-val">{namesSize}</span>
-      </div>
-
-      <label>Upload fonts</label>
-      <input
-        type="file"
-        accept=".ttf,.otf,.woff,.woff2"
-        multiple
-        onChange={(e) => void onFontUpload(e.target.files)}
-      />
-    </div>
-  );
-
-  const bgTab = (
-    <div className="section-body">
-      <label>Colour</label>
-      <input
-        type="color"
-        className="swatch"
-        value={bgColor}
-        onChange={(e) => setBgColor(e.target.value)}
-      />
-      {slider("Opacity", bgAlpha, setBgAlpha, 0, 100, "%")}
-      {check("Show image", showBg, setShowBg)}
-      <label>Image</label>
-      <input
-        type="file"
-        accept="image/*"
-        onChange={(e) => onImageUpload(e.target.files?.[0], setBackground, setBgName)}
-      />
-      {background && bgName && (
-        <div className="uploads">
-          <div className="upload-item">
-            <span className="name">{bgName}</span>
-            <button
-              type="button"
-              className="upload-del"
-              aria-label="Remove"
-              onClick={() => {
-                setBackground(null);
-                setBgName("");
-              }}
-            >
-              ×
-            </button>
-          </div>
-        </div>
-      )}
-      <label>Image fit</label>
-      <select className="font-style" value={bgFit} onChange={(e) => setBgFit(e.target.value)}>
-        <option value="cover">Cover</option>
-        <option value="contain">Contain</option>
-        <option value="stretch">Stretch</option>
-        <option value="tile">Tile</option>
-      </select>
-      <label>Image position</label>
-      <select
-        className="font-style"
-        value={bgPosition}
-        onChange={(e) => setBgPosition(e.target.value)}
-      >
-        {[
-          "center",
-          "top",
-          "bottom",
-          "left",
-          "right",
-          "top-left",
-          "top-right",
-          "bottom-left",
-          "bottom-right",
-        ].map((p) => (
-          <option key={p} value={p}>
-            {p.replace("-", " ").replace(/^\w/, (c) => c.toUpperCase())}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-
-  const imageTab = (which: "badge" | "crest"): JSX.Element => {
-    const isBadge = which === "badge";
-    const show = isBadge ? showBadge : showCrest;
-    const setShow = isBadge ? setShowBadge : setShowCrest;
-    const scale = isBadge ? badgeScale : crestScale;
-    const setScale = isBadge ? setBadgeScale : setCrestScale;
-    const shadow = isBadge ? badgeShadow : crestShadow;
-    const setShadow = isBadge ? setBadgeShadow : setCrestShadow;
-    const img = isBadge ? badge : crestOverride;
-    const name = isBadge ? badgeName : crestName;
-    const setImg = isBadge ? setBadge : setCrestOverride;
-    const setName = isBadge ? setBadgeName : setCrestName;
-    return (
-      <div className="section-body">
-        {check(isBadge ? "Show logo (top left)" : "Show logo (top right)", show, setShow)}
-        <label>{isBadge ? "Image" : "Image (overrides the team logo)"}</label>
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) => onImageUpload(e.target.files?.[0], setImg, setName)}
-        />
-        {img && name && (
-          <div className="uploads">
-            <div className="upload-item">
-              <span className="name">{name}</span>
-              <button
-                type="button"
-                className="upload-del"
-                aria-label="Remove"
-                onClick={() => {
-                  setImg(null);
-                  setName("");
-                }}
-              >
-                ×
-              </button>
-            </div>
-          </div>
-        )}
-        {slider("Size", scale, setScale, isBadge ? 50 : 50, isBadge ? 150 : 130, "%")}
-        {check("Drop shadow", shadow, setShadow)}
-      </div>
-    );
-  };
-
-  const kitsTab = (
-    <div className="section-body">
-      <label>Players kit</label>
-      {kitSelect(playersKit, setPlayersKit)}
-      <label>Keepers kit</label>
-      {kitSelect(keepersKit, setKeepersKit)}
-      <label>Staff kit</label>
-      {kitSelect(staffKit, setStaffKit)}
-      <label>Upload kits</label>
-      <input
-        type="file"
-        accept=".json,application/json"
-        multiple
-        onChange={(e) => onKitUpload(e.target.files)}
-      />
-    </div>
-  );
-
-  const exportTab = (
-    <div className="section-body">
-      <button type="button" onClick={exportPng}>
-        PNG
-      </button>
-      <div id="status">{status}</div>
-    </div>
-  );
+  const fontUploads = uploadedFonts.map((n) => ({ name: n, onRemove: () => removeFont(n) }));
 
   return (
     <AppShell
@@ -904,20 +541,190 @@ export function App(): JSX.Element {
       controls={
         <Tabs
           tabs={[
-            { id: "squad", label: "Squad", content: squadTab },
-            { id: "layout", label: "Layout", content: layoutTab },
-            { id: "display", label: "Show", content: showTab },
-            { id: "text", label: "Text", content: textTab },
-            { id: "bg", label: "Background", content: bgTab },
-            { id: "badge", label: "Logo (top left)", content: imageTab("badge") },
-            { id: "crest", label: "Logo (top right)", content: imageTab("crest") },
-            { id: "kits", label: "Kits", content: kitsTab },
-            { id: "export", label: "Export", content: exportTab },
+            {
+              id: "squad",
+              label: "Squad",
+              content: (
+                <SquadTab
+                  authState={authState}
+                  loginUrl={`${API_BASE}/api/auth/login`}
+                  onDisconnect={disconnect}
+                  teams={teams}
+                  onSelectTeam={(id) => loadRoster(id).catch(reportError)}
+                  teamName={teamName}
+                  squad={squad}
+                  onToggle={toggle}
+                  onSetRole={setRole}
+                  onMove={move}
+                />
+              ),
+            },
+            {
+              id: "layout",
+              label: "Layout",
+              content: (
+                <LayoutTab
+                  rows={rows}
+                  setRows={setRows}
+                  maxRows={Math.max(8, squad.length || 8)}
+                  stairH={stairH}
+                  setStairH={setStairH}
+                  stairTop={stairTop}
+                  setStairTop={setStairTop}
+                  stairFront={stairFront}
+                  setStairFront={setStairFront}
+                  stagger={stagger}
+                  setStagger={setStagger}
+                />
+              ),
+            },
+            {
+              id: "display",
+              label: "Show",
+              content: (
+                <ShowTab
+                  showName={showName}
+                  setShowName={setShowName}
+                  showNames={showNames}
+                  setShowNames={setShowNames}
+                  showStairs={showStairs}
+                  setShowStairs={setShowStairs}
+                />
+              ),
+            },
+            {
+              id: "text",
+              label: "Text",
+              content: (
+                <TextTab
+                  allFonts={allFonts}
+                  headerFont={headerFont}
+                  onHeaderFont={pickHeaderFont}
+                  headerStyle={headerStyle}
+                  onHeaderStyle={pickHeaderStyle}
+                  headerSize={headerSize}
+                  setHeaderSize={setHeaderSize}
+                  headerColor={headerColor}
+                  setHeaderColor={setHeaderColor}
+                  namesFont={namesFont}
+                  onNamesFont={pickNamesFont}
+                  namesStyle={namesStyle}
+                  onNamesStyle={pickNamesStyle}
+                  namesSize={namesSize}
+                  setNamesSize={setNamesSize}
+                  namesColor={namesColor}
+                  setNamesColor={setNamesColor}
+                  fontUploads={fontUploads}
+                  onFontUpload={(f) => void onFontUpload(f)}
+                />
+              ),
+            },
+            {
+              id: "bg",
+              label: "Background",
+              content: (
+                <BackgroundTab
+                  bgColor={bgColor}
+                  setBgColor={setBgColor}
+                  bgAlpha={bgAlpha}
+                  setBgAlpha={setBgAlpha}
+                  showBg={showBg}
+                  setShowBg={setShowBg}
+                  onUpload={(f) => onImageUpload(f, setBackground, setBgName)}
+                  bgName={background ? bgName : ""}
+                  onRemove={() => {
+                    setBackground(null);
+                    setBgName("");
+                  }}
+                  bgFit={bgFit}
+                  setBgFit={setBgFit}
+                  bgPosition={bgPosition}
+                  setBgPosition={setBgPosition}
+                />
+              ),
+            },
+            {
+              id: "badge",
+              label: "Logo (top left)",
+              content: (
+                <LogoTab
+                  showLabel="Show logo (top left)"
+                  imageLabel="Image"
+                  show={showBadge}
+                  setShow={setShowBadge}
+                  onUpload={(f) => onImageUpload(f, setBadge, setBadgeName)}
+                  name={badge ? badgeName : ""}
+                  onRemove={() => {
+                    setBadge(null);
+                    setBadgeName("");
+                  }}
+                  scale={badgeScale}
+                  setScale={setBadgeScale}
+                  scaleMin={50}
+                  scaleMax={150}
+                  shadow={badgeShadow}
+                  setShadow={setBadgeShadow}
+                />
+              ),
+            },
+            {
+              id: "crest",
+              label: "Logo (top right)",
+              content: (
+                <LogoTab
+                  showLabel="Show logo (top right)"
+                  imageLabel="Image (overrides the team logo)"
+                  show={showCrest}
+                  setShow={setShowCrest}
+                  onUpload={(f) => onImageUpload(f, setCrestOverride, setCrestName)}
+                  name={crestOverride ? crestName : ""}
+                  onRemove={() => {
+                    setCrestOverride(null);
+                    setCrestName("");
+                  }}
+                  scale={crestScale}
+                  setScale={setCrestScale}
+                  scaleMin={50}
+                  scaleMax={130}
+                  shadow={crestShadow}
+                  setShadow={setCrestShadow}
+                />
+              ),
+            },
+            {
+              id: "kits",
+              label: "Kits",
+              content: (
+                <KitsTab
+                  playersKit={playersKit}
+                  setPlayersKit={setPlayersKit}
+                  keepersKit={keepersKit}
+                  setKeepersKit={setKeepersKit}
+                  staffKit={staffKit}
+                  setStaffKit={setStaffKit}
+                  customKits={customKits}
+                  onKitUpload={onKitUpload}
+                  onRemoveKit={removeKit}
+                />
+              ),
+            },
+            {
+              id: "export",
+              label: "Export",
+              content: <ExportTab onExport={exportPng} status={status} />,
+            },
           ]}
         />
       }
     >
-      <div id="stage" className="panel" ref={stageRef} />
+      <div className={styles.stage}>
+        <div className={styles.host} ref={stageRef} />
+        {loading > 0 && (
+          <div className={styles.overlay}>
+            <Loader n={loading} total={total} />
+          </div>
+        )}
+      </div>
     </AppShell>
   );
 }

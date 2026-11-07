@@ -1,0 +1,61 @@
+.root {
+  display: block;
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.label {
+  margin: 10px 0 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.val {
+  font-size: 13px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.control {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 18px;
+  cursor: pointer;
+}
+
+.track {
+  position: relative;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--line);
+}
+
+.indicator {
+  position: absolute;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--accent);
+}
+
+.thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--panel);
+  box-shadow: 0 0 0 1px var(--line);
+}
+
+.thumb:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 1px var(--line),
+    0 0 0 4px color-mix(in srgb, var(--accent) 30%, transparent);
+}

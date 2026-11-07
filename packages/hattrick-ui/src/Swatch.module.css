@@ -1,0 +1,29 @@
+.swatch {
+  width: 44px;
+  height: 44px;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.sm {
+  width: 34px;
+  height: 34px;
+  flex: none;
+}
+
+.swatch::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.swatch::-webkit-color-swatch {
+  border: none;
+  border-radius: calc(var(--radius) - 2px);
+}
+
+.swatch::-moz-color-swatch {
+  border: none;
+  border-radius: calc(var(--radius) - 2px);
+}

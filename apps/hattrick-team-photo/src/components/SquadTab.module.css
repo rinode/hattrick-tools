@@ -1,0 +1,102 @@
+/* The Squad tab fills its panel so the roster list can run to the bottom. */
+.body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.auth {
+  margin-bottom: 12px;
+}
+
+.connect {
+  display: block;
+}
+
+.note {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.disconnect {
+  color: var(--accent);
+}
+
+.teamName {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.squad {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 120px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 4px 8px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+}
+
+.name {
+  flex: 1;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.disabled .name {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.box {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  display: inline-grid;
+  place-content: center;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.box[data-checked] {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.indicator {
+  display: grid;
+  place-items: center;
+  color: #fff;
+}
+
+.mv {
+  width: 26px;
+  height: 26px;
+  margin: 0;
+  padding: 0;
+  font-size: 13px;
+  line-height: 1;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.mv:disabled {
+  opacity: 0.4;
+  cursor: default;
+}

@@ -1,9 +1,11 @@
 import type { JSX } from "react";
+import { ToggleGroup } from "@base-ui/react/toggle-group";
+import { Toggle } from "@base-ui/react/toggle";
 import styles from "./GenderToggle.module.css";
 
 export type Gender = "m" | "f";
 
-/** A two-segment single-select control for male/female. */
+/** A two-segment single-select control for male/female (Base UI ToggleGroup). */
 export function GenderToggle({
   value,
   onChange,
@@ -12,25 +14,20 @@ export function GenderToggle({
   onChange: (g: Gender) => void;
 }): JSX.Element {
   return (
-    <div className={styles.toggle} role="radiogroup" aria-label="Gender">
-      <button
-        type="button"
-        role="radio"
-        aria-checked={value === "m"}
-        aria-pressed={value === "m"}
-        onClick={() => onChange("m")}
-      >
+    <ToggleGroup
+      className={styles.group}
+      value={[value]}
+      onValueChange={(groupValue) => {
+        const next = (groupValue as string[]).find((v) => v !== value);
+        if (next === "m" || next === "f") onChange(next);
+      }}
+    >
+      <Toggle className={styles.toggle} value="m">
         Male
-      </button>
-      <button
-        type="button"
-        role="radio"
-        aria-checked={value === "f"}
-        aria-pressed={value === "f"}
-        onClick={() => onChange("f")}
-      >
+      </Toggle>
+      <Toggle className={styles.toggle} value="f">
         Female
-      </button>
-    </div>
+      </Toggle>
+    </ToggleGroup>
   );
 }

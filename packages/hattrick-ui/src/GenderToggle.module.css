@@ -1,11 +1,11 @@
-.toggle {
+.group {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 6px;
   margin-top: 4px;
 }
 
-.toggle button {
+.toggle {
   margin: 0;
   padding: 7px;
   background: var(--surface);
@@ -19,7 +19,7 @@
   cursor: pointer;
 }
 
-.toggle button[aria-pressed="true"] {
+.toggle[data-pressed] {
   background: var(--accent);
   color: #fff;
   border-color: var(--accent);

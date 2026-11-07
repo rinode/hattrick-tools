@@ -44,6 +44,9 @@ importers:
 
   apps/hattrick-team-photo:
     dependencies:
+      '@base-ui/react':
+        specifier: ^1.9.0
+        version: 1.9.0(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       hattrick-player-renderer:
         specifier: workspace:*
         version: link:../../packages/hattrick-player-renderer
