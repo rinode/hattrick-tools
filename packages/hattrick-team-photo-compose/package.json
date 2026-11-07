@@ -1,0 +1,32 @@
+{
+  "name": "hattrick-team-photo-compose",
+  "version": "0.0.0",
+  "description": "Compose a Hattrick team photo: arrange rendered player figures on a stair floor with a header, crest/badge, background and a name footer. Framework-agnostic.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "hattrick-player-renderer": "workspace:*"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.5",
+    "vitest": "^2.1.9"
+  }
+}

@@ -29,6 +29,7 @@ export default defineConfig({
     alias: {
       "hattrick-player-renderer": src("hattrick-player-renderer"),
       "hattrick-player-renderer-react": src("hattrick-player-renderer-react"),
+      "hattrick-team-photo-compose": src("hattrick-team-photo-compose"),
       "hattrick-ui": src("hattrick-ui"),
     },
   },

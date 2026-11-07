@@ -8,9 +8,17 @@ import {
   type RenderInputs,
   type RenderOutput,
 } from "hattrick-player-renderer";
-import { composeTeamPhoto, naturalSize, type PhotoMeta } from "./compose.js";
-import { computeLayout, DEFAULT_LAYOUT, type LayoutOptions } from "./layout.js";
-import { DEFAULT_FRONT, stairRowRise, stairTileUrl } from "./stairs.js";
+import {
+  composeTeamPhoto,
+  computeLayout,
+  DEFAULT_FRONT,
+  DEFAULT_LAYOUT,
+  naturalSize,
+  stairRowRise,
+  stairTileUrl,
+  type LayoutOptions,
+  type PhotoMeta,
+} from "hattrick-team-photo-compose";
 import {
   customFonts,
   defaultStyle,

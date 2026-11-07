@@ -53,6 +53,9 @@ importers:
       hattrick-player-renderer-react:
         specifier: workspace:*
         version: link:../../packages/hattrick-player-renderer-react
+      hattrick-team-photo-compose:
+        specifier: workspace:*
+        version: link:../../packages/hattrick-team-photo-compose
       hattrick-theme:
         specifier: workspace:*
         version: link:../../packages/hattrick-theme
@@ -164,6 +167,19 @@ importers:
       react:
         specifier: ^19.3.1
         version: 19.3.1
+
+  packages/hattrick-team-photo-compose:
+    dependencies:
+      hattrick-player-renderer:
+        specifier: workspace:*
+        version: link:../hattrick-player-renderer
+    devDependencies:
+      tsup:
+        specifier: ^8.3.5
+        version: 8.5.1(postcss@8.5.32)(tsx@4.23.15)(typescript@5.9.3)
+      vitest:
+        specifier: ^2.1.9
+        version: 2.1.9(@types/node@22.20.5)(jsdom@25.0.1)
 
   packages/hattrick-theme: {}
 
