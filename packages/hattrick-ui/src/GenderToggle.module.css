@@ -1,8 +1,12 @@
+/* Split button: the two segments sit flush with a single shared divider,
+   and only the outer corners of the whole group are rounded. */
 .group {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 6px;
   margin-top: 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
 }
 
 .toggle {
@@ -10,8 +14,8 @@
   padding: 7px;
   background: var(--surface);
   color: var(--ink);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border: 0;
+  border-radius: 0;
   font-family: "Rosetta", Verdana, sans-serif;
   font-weight: 500;
   font-size: 16px;
@@ -19,8 +23,11 @@
   cursor: pointer;
 }
 
+.toggle + .toggle {
+  border-left: 1px solid var(--line);
+}
+
 .toggle[data-pressed] {
   background: var(--accent);
   color: #fff;
-  border-color: var(--accent);
 }

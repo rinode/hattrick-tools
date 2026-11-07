@@ -540,6 +540,7 @@ export function App(): JSX.Element {
       title="Team Photo"
       controls={
         <Tabs
+          storageKey="ht-team-photo-tab"
           tabs={[
             {
               id: "squad",

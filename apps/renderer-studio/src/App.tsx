@@ -139,6 +139,7 @@ export function App(): JSX.Element {
       title="Player Renderer"
       controls={
         <Tabs
+          storageKey="ht-studio-tab"
           tabs={[
             {
               id: "appearance",
