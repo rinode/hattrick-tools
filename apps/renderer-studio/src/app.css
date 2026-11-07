@@ -153,6 +153,14 @@ details > summary {
   display: none;
 }
 
+/* Invisible click-catcher behind the floating grid: a click anywhere off the
+   grid lands here and closes it. */
+.picker-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 49;
+}
+
 .cell {
   margin: 0;
   padding: 4px;

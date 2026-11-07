@@ -301,10 +301,12 @@ function createPicker(spec: PickerSpec): HTMLDivElement {
   grid.className = "grid";
   grid.hidden = true;
 
-  const onDocPointer = (e: PointerEvent): void => {
-    const target = e.target as Node;
-    if (!grid.contains(target) && !trigger.contains(target)) closeGrid();
-  };
+  // A transparent full-screen backdrop sits just under the grid; any click on it
+  // (i.e. anywhere outside the grid) closes the popover.
+  const backdrop = document.createElement("div");
+  backdrop.className = "picker-backdrop";
+  backdrop.addEventListener("pointerdown", () => closeGrid());
+
   const onKey = (e: KeyboardEvent): void => {
     if (e.key === "Escape") closeGrid();
   };
@@ -340,9 +342,9 @@ function createPicker(spec: PickerSpec): HTMLDivElement {
     if (grid.hidden) return;
     grid.hidden = true;
     grid.remove();
+    backdrop.remove();
     trigger.setAttribute("aria-expanded", "false");
     wrap.classList.remove("open");
-    document.removeEventListener("pointerdown", onDocPointer, true);
     window.removeEventListener("scroll", closeGrid, true);
     window.removeEventListener("resize", closeGrid);
     document.removeEventListener("keydown", onKey, true);
@@ -353,14 +355,13 @@ function createPicker(spec: PickerSpec): HTMLDivElement {
   function openGrid(): void {
     closeActivePopover();
     if (!built) buildGrid();
+    document.body.appendChild(backdrop);
     document.body.appendChild(grid);
     grid.hidden = false;
     positionGrid();
     trigger.setAttribute("aria-expanded", "true");
     wrap.classList.add("open");
     activeClose = closeGrid;
-    // Defer so the opening click itself doesn't immediately close it.
-    setTimeout(() => document.addEventListener("pointerdown", onDocPointer, true), 0);
     window.addEventListener("scroll", closeGrid, true);
     window.addEventListener("resize", closeGrid);
     document.addEventListener("keydown", onKey, true);
