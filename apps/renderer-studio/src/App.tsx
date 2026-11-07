@@ -1,5 +1,12 @@
 import { type JSX, useMemo, useRef, useState } from "react";
-import { AppShell, GenderToggle, PartPicker, type PickerOption, SkinSwatches, Tabs } from "hattrick-ui";
+import {
+  AppShell,
+  GenderToggle,
+  PartPicker,
+  type PickerOption,
+  SkinSwatches,
+  Tabs,
+} from "hattrick-ui";
 import { AvatarFigure } from "hattrick-player-renderer-react";
 import { BODY_TYPES, type RenderOutput } from "hattrick-player-renderer";
 import {
@@ -101,7 +108,9 @@ export function App(): JSX.Element {
     const next: Record<string, string> = {};
     for (const cfg of cfgs) {
       if (cfg.key === FACE) continue;
-      const pool = cfg.optional ? ["", ...optionsFor(gender, newShape, cfg)] : optionsFor(gender, newShape, cfg);
+      const pool = cfg.optional
+        ? ["", ...optionsFor(gender, newShape, cfg)]
+        : optionsFor(gender, newShape, cfg);
       if (pool.length) next[cfg.key] = randOf(pool) ?? "";
     }
     setSel(next);
@@ -206,7 +215,12 @@ export function App(): JSX.Element {
       />
 
       <label htmlFor="kitJson">Kit JSON URL (optional)</label>
-      <input id="kitJson" type="text" value={kitJson} onChange={(e) => setKitJson(e.target.value)} />
+      <input
+        id="kitJson"
+        type="text"
+        value={kitJson}
+        onChange={(e) => setKitJson(e.target.value)}
+      />
     </>
   );
 

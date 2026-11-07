@@ -34,7 +34,8 @@ class HtPlayerAvatar extends HTMLElement {
     super();
     this.#root = this.attachShadow({ mode: "open" });
     const style = document.createElement("style");
-    style.textContent = ":host{display:inline-block} :host img,:host canvas{max-width:100%;height:auto}";
+    style.textContent =
+      ":host{display:inline-block} :host img,:host canvas{max-width:100%;height:auto}";
     this.#root.appendChild(style);
   }
 

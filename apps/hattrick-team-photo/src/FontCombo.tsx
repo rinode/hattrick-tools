@@ -17,8 +17,9 @@ export function FontCombo({
   const [active, setActive] = useState(-1);
   const listRef = useRef<HTMLDivElement>(null);
 
-  const shown = (query ? fonts.filter((n) => n.toLowerCase().includes(query.toLowerCase())) : fonts)
-    .slice(0, 300);
+  const shown = (
+    query ? fonts.filter((n) => n.toLowerCase().includes(query.toLowerCase())) : fonts
+  ).slice(0, 300);
 
   // Lazy-load a preview font for each visible row.
   useEffect(() => {

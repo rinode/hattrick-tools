@@ -168,10 +168,8 @@ function buildFaceElements(s: StudioModel): AvatarPart[] {
     const value = s.sel[cfg.key] ?? "";
     if (!value) continue;
     const headCat = HEAD_CAT[cfg.key];
-    const off =
-      (headCat && partOffset(s.gender, s.shape, headCat, value)) ??
-      CATALOG[cfg.key]?.[value] ??
-      [5, 5];
+    const off = (headCat && partOffset(s.gender, s.shape, headCat, value)) ??
+      CATALOG[cfg.key]?.[value] ?? [5, 5];
     out.push({ url: `/Img/Avatar/${cfg.key}/${value}`, x: off[0], y: off[1] });
   }
   return out;

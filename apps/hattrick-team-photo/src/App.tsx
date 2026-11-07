@@ -288,11 +288,43 @@ export function App(): JSX.Element {
     composed.current = canvas;
     stage.replaceChildren(canvas);
   }, [
-    squad, rows, stairH, stagger, showName, showNames, showStairs, showBg, showCrest, showBadge,
-    teamName, crest, crestOverride, crestShadow, crestScale, badge, badgeShadow, badgeScale,
-    bgColor, bgAlpha, bgFit, bgPosition, background, headerFont, headerStyle, headerSize,
-    headerColor, namesFont, namesStyle, namesSize, namesColor, loading, tick,
-    playersKit, keepersKit, staffKit, customKits,
+    squad,
+    rows,
+    stairH,
+    stagger,
+    showName,
+    showNames,
+    showStairs,
+    showBg,
+    showCrest,
+    showBadge,
+    teamName,
+    crest,
+    crestOverride,
+    crestShadow,
+    crestScale,
+    badge,
+    badgeShadow,
+    badgeScale,
+    bgColor,
+    bgAlpha,
+    bgFit,
+    bgPosition,
+    background,
+    headerFont,
+    headerStyle,
+    headerSize,
+    headerColor,
+    namesFont,
+    namesStyle,
+    namesSize,
+    namesColor,
+    loading,
+    tick,
+    playersKit,
+    keepersKit,
+    staffKit,
+    customKits,
   ]);
 
   useEffect(() => {
@@ -398,9 +430,7 @@ export function App(): JSX.Element {
         /* ignore */
       }
       await loadRoster();
-    })().catch((err) =>
-      setStatus("Error: " + (err instanceof Error ? err.message : String(err))),
-    );
+    })().catch((err) => setStatus("Error: " + (err instanceof Error ? err.message : String(err))));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -483,10 +513,7 @@ export function App(): JSX.Element {
     link.click();
   }
 
-  const kitSelect = (
-    value: string,
-    set: (v: string) => void,
-  ): JSX.Element => (
+  const kitSelect = (value: string, set: (v: string) => void): JSX.Element => (
     <select className="font-style" value={value} onChange={(e) => set(e.target.value)}>
       {KIT_OPTS.map(([v, t]) => (
         <option key={v} value={v}>
@@ -503,7 +530,10 @@ export function App(): JSX.Element {
 
   // --- Tab content. ---------------------------------------------------------
   const squadTab = (
-    <div className="section-body" style={{ display: "flex", flexDirection: "column", minHeight: "100%" }}>
+    <div
+      className="section-body"
+      style={{ display: "flex", flexDirection: "column", minHeight: "100%" }}
+    >
       <div style={{ marginBottom: 12 }}>
         {authHtml === "demo" && (
           <>
@@ -521,9 +551,10 @@ export function App(): JSX.Element {
               style={{ color: "var(--accent)" }}
               onClick={(e) => {
                 e.preventDefault();
-                fetch(`${API_BASE}/api/auth/logout`, { method: "POST", credentials: "include" }).finally(
-                  () => location.reload(),
-                );
+                fetch(`${API_BASE}/api/auth/logout`, {
+                  method: "POST",
+                  credentials: "include",
+                }).finally(() => location.reload());
               }}
             >
               disconnect
@@ -624,9 +655,19 @@ export function App(): JSX.Element {
       {slider("Rows", rows, setRows, 1, Math.max(8, squad.length || 8))}
       {slider("Row height", stairH, setStairH, 20, 90)}
       <label>Step top colour</label>
-      <input type="color" className="swatch" value={stairTop} onChange={(e) => setStairTop(e.target.value)} />
+      <input
+        type="color"
+        className="swatch"
+        value={stairTop}
+        onChange={(e) => setStairTop(e.target.value)}
+      />
       <label>Step front colour</label>
-      <input type="color" className="swatch" value={stairFront} onChange={(e) => setStairFront(e.target.value)} />
+      <input
+        type="color"
+        className="swatch"
+        value={stairFront}
+        onChange={(e) => setStairFront(e.target.value)}
+      />
       {check("Stagger rows", stagger, setStagger)}
     </div>
   );
@@ -676,7 +717,13 @@ export function App(): JSX.Element {
       </div>
       {styleSelect(headerFont, headerStyle, setHeaderStyle, "header")}
       <div className="slider-row" style={{ marginTop: 6 }}>
-        <input type="range" min={28} max={80} value={headerSize} onChange={(e) => setHeaderSize(Number(e.target.value))} />
+        <input
+          type="range"
+          min={28}
+          max={80}
+          value={headerSize}
+          onChange={(e) => setHeaderSize(Number(e.target.value))}
+        />
         <span className="slider-val">{headerSize}</span>
       </div>
 
@@ -692,28 +739,56 @@ export function App(): JSX.Element {
       </div>
       {styleSelect(namesFont, namesStyle, setNamesStyle, "names")}
       <div className="slider-row" style={{ marginTop: 6 }}>
-        <input type="range" min={10} max={24} value={namesSize} onChange={(e) => setNamesSize(Number(e.target.value))} />
+        <input
+          type="range"
+          min={10}
+          max={24}
+          value={namesSize}
+          onChange={(e) => setNamesSize(Number(e.target.value))}
+        />
         <span className="slider-val">{namesSize}</span>
       </div>
 
       <label>Upload fonts</label>
-      <input type="file" accept=".ttf,.otf,.woff,.woff2" multiple onChange={(e) => void onFontUpload(e.target.files)} />
+      <input
+        type="file"
+        accept=".ttf,.otf,.woff,.woff2"
+        multiple
+        onChange={(e) => void onFontUpload(e.target.files)}
+      />
     </div>
   );
 
   const bgTab = (
     <div className="section-body">
       <label>Colour</label>
-      <input type="color" className="swatch" value={bgColor} onChange={(e) => setBgColor(e.target.value)} />
+      <input
+        type="color"
+        className="swatch"
+        value={bgColor}
+        onChange={(e) => setBgColor(e.target.value)}
+      />
       {slider("Opacity", bgAlpha, setBgAlpha, 0, 100, "%")}
       {check("Show image", showBg, setShowBg)}
       <label>Image</label>
-      <input type="file" accept="image/*" onChange={(e) => onImageUpload(e.target.files?.[0], setBackground, setBgName)} />
+      <input
+        type="file"
+        accept="image/*"
+        onChange={(e) => onImageUpload(e.target.files?.[0], setBackground, setBgName)}
+      />
       {background && bgName && (
         <div className="uploads">
           <div className="upload-item">
             <span className="name">{bgName}</span>
-            <button type="button" className="upload-del" aria-label="Remove" onClick={() => { setBackground(null); setBgName(""); }}>
+            <button
+              type="button"
+              className="upload-del"
+              aria-label="Remove"
+              onClick={() => {
+                setBackground(null);
+                setBgName("");
+              }}
+            >
               ×
             </button>
           </div>
@@ -727,21 +802,31 @@ export function App(): JSX.Element {
         <option value="tile">Tile</option>
       </select>
       <label>Image position</label>
-      <select className="font-style" value={bgPosition} onChange={(e) => setBgPosition(e.target.value)}>
-        {["center", "top", "bottom", "left", "right", "top-left", "top-right", "bottom-left", "bottom-right"].map(
-          (p) => (
-            <option key={p} value={p}>
-              {p.replace("-", " ").replace(/^\w/, (c) => c.toUpperCase())}
-            </option>
-          ),
-        )}
+      <select
+        className="font-style"
+        value={bgPosition}
+        onChange={(e) => setBgPosition(e.target.value)}
+      >
+        {[
+          "center",
+          "top",
+          "bottom",
+          "left",
+          "right",
+          "top-left",
+          "top-right",
+          "bottom-left",
+          "bottom-right",
+        ].map((p) => (
+          <option key={p} value={p}>
+            {p.replace("-", " ").replace(/^\w/, (c) => c.toUpperCase())}
+          </option>
+        ))}
       </select>
     </div>
   );
 
-  const imageTab = (
-    which: "badge" | "crest",
-  ): JSX.Element => {
+  const imageTab = (which: "badge" | "crest"): JSX.Element => {
     const isBadge = which === "badge";
     const show = isBadge ? showBadge : showCrest;
     const setShow = isBadge ? setShowBadge : setShowCrest;
@@ -757,12 +842,24 @@ export function App(): JSX.Element {
       <div className="section-body">
         {check(isBadge ? "Show logo (top left)" : "Show logo (top right)", show, setShow)}
         <label>{isBadge ? "Image" : "Image (overrides the team logo)"}</label>
-        <input type="file" accept="image/*" onChange={(e) => onImageUpload(e.target.files?.[0], setImg, setName)} />
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) => onImageUpload(e.target.files?.[0], setImg, setName)}
+        />
         {img && name && (
           <div className="uploads">
             <div className="upload-item">
               <span className="name">{name}</span>
-              <button type="button" className="upload-del" aria-label="Remove" onClick={() => { setImg(null); setName(""); }}>
+              <button
+                type="button"
+                className="upload-del"
+                aria-label="Remove"
+                onClick={() => {
+                  setImg(null);
+                  setName("");
+                }}
+              >
                 ×
               </button>
             </div>
@@ -783,7 +880,12 @@ export function App(): JSX.Element {
       <label>Staff kit</label>
       {kitSelect(staffKit, setStaffKit)}
       <label>Upload kits</label>
-      <input type="file" accept=".json,application/json" multiple onChange={(e) => onKitUpload(e.target.files)} />
+      <input
+        type="file"
+        accept=".json,application/json"
+        multiple
+        onChange={(e) => onKitUpload(e.target.files)}
+      />
     </div>
   );
 

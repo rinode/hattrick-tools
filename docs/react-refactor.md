@@ -39,7 +39,7 @@ New:
   `useAvatarConfig` reducer (gender, tone, shape, parts, body, manifest-driven
   options).
 - `hattrick-player-renderer-react`: thin wrapper exposing `<AvatarFigure
-  inputs={...} />` / `useAvatarRender`, managing the imperative render lifecycle
+inputs={...} />` / `useAvatarRender`, managing the imperative render lifecycle
   (abort stale renders, StrictMode double-invoke).
 - `hattrick-player-renderer-element`: `<ht-player-avatar>` custom element built
   as one self-contained bundle served by the worker at `/embed/…`. Shadow DOM

@@ -51,10 +51,7 @@ export function AppShell({ title, controls, children }: AppShellProps): JSX.Elem
         </button>
       </header>
       <main>
-        <div
-          className={`drawer-backdrop${open ? " open" : ""}`}
-          onClick={() => setOpen(false)}
-        />
+        <div className={`drawer-backdrop${open ? " open" : ""}`} onClick={() => setOpen(false)} />
         <div id="controls" className={`panel${open ? " open" : ""}`}>
           {controls}
         </div>

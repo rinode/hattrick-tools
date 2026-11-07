@@ -30,11 +30,7 @@ export function Tabs({ tabs }: { tabs: TabDef[] }): JSX.Element {
         ))}
       </div>
       {tabs.map((t) => (
-        <div
-          key={t.id}
-          role="tabpanel"
-          className={`tab-panel${t.id === active ? " active" : ""}`}
-        >
+        <div key={t.id} role="tabpanel" className={`tab-panel${t.id === active ? " active" : ""}`}>
           {t.content}
         </div>
       ))}

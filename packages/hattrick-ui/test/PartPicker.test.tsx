@@ -24,10 +24,7 @@ describe("PartPicker", () => {
     const listbox = screen.getByRole("listbox", { name: "Eyes" });
     expect(within(listbox).getAllByRole("option")).toHaveLength(3);
     // The current value is marked selected.
-    expect(within(listbox).getByRole("option", { selected: true })).toHaveAttribute(
-      "title",
-      "e2b",
-    );
+    expect(within(listbox).getByRole("option", { selected: true })).toHaveAttribute("title", "e2b");
   });
 
   it("fires onChange with the picked value and closes", async () => {
