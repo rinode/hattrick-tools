@@ -309,13 +309,31 @@ function createPicker(spec: PickerSpec): HTMLDivElement {
     if (e.key === "Escape") closeGrid();
   };
 
+  // Anchor under the trigger, but always keep the popover inside the viewport:
+  // clamp its width/left horizontally, and place it below or above (whichever
+  // has more room) with its height capped to that space so it never overflows.
   function positionGrid(): void {
+    const m = 8; // viewport margin
     const r = trigger.getBoundingClientRect();
-    grid.style.left = `${r.left}px`;
-    grid.style.top = `${r.bottom + 4}px`;
-    grid.style.width = `${r.width}px`;
-    // Cap height to the space below the trigger so it never runs off-screen.
-    grid.style.maxHeight = `${Math.max(140, window.innerHeight - r.bottom - 16)}px`;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    const width = Math.min(r.width, vw - 2 * m);
+    grid.style.width = `${width}px`;
+    grid.style.left = `${Math.max(m, Math.min(r.left, vw - width - m))}px`;
+
+    const spaceBelow = vh - r.bottom - m;
+    const spaceAbove = r.top - m;
+    grid.style.maxHeight = "none";
+    const needed = grid.offsetHeight;
+    if (needed <= spaceBelow || spaceBelow >= spaceAbove) {
+      grid.style.top = `${r.bottom + 4}px`;
+      grid.style.maxHeight = `${Math.max(80, spaceBelow)}px`;
+    } else {
+      const h = Math.min(needed, spaceAbove);
+      grid.style.top = `${Math.max(m, r.top - 4 - h)}px`;
+      grid.style.maxHeight = `${Math.max(80, spaceAbove)}px`;
+    }
   }
 
   function closeGrid(): void {
