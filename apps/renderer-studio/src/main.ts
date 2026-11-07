@@ -428,6 +428,27 @@ function resetForGender(): void {
   scheduleRender();
 }
 
+const randOf = <T>(arr: T[]): T | undefined => arr[Math.floor(Math.random() * arr.length)];
+
+/** Re-rolls tone, face shape and every part within the valid options for the
+ *  current gender (part options are manifest-filtered to the chosen shape). */
+function randomize(): void {
+  const tones = toneTable().order;
+  selectedTone = randOf(tones) ?? selectedTone;
+  faceShapeIdx = Math.floor(Math.random() * faceShapes().length);
+  sel.clear();
+  for (const cfg of parts()) {
+    if (cfg.key === FACE) continue;
+    const opts = optionsFor(cfg); // depends on the shape set just above
+    if (opts.length) sel.set(cfg.key, randOf(opts) ?? "");
+  }
+  buildToneSwatches();
+  buildSteppers();
+  scheduleRender();
+}
+
+el<HTMLButtonElement>("randomBtn").addEventListener("click", randomize);
+
 el<HTMLButtonElement>("exportBtn").addEventListener("click", () => {
   if (!lastOutput) {
     status.textContent = "Nothing to export yet.";
