@@ -9,3 +9,4 @@ export { Check } from "./Check.js";
 export { Swatch } from "./Swatch.js";
 export { NumberField } from "./NumberField.js";
 export { Select, type SelectOption } from "./Select.js";
+export { Collapsible } from "./Collapsible.js";

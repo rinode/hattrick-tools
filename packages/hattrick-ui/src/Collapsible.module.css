@@ -1,0 +1,58 @@
+.root {
+  border-top: 1px solid var(--line);
+}
+
+.root:first-child {
+  border-top: 0;
+}
+
+/* A plain section header, not the themed green button. */
+.trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin: 0;
+  padding: 12px 2px;
+  background: transparent;
+  color: var(--ink);
+  border: 0;
+  border-radius: 0;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 13px;
+  text-transform: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.trigger:hover {
+  background: transparent;
+  color: var(--accent);
+}
+
+.chevron {
+  flex: 0 0 auto;
+  color: var(--muted);
+  transition: transform 0.15s ease;
+}
+
+.trigger[data-panel-open] .chevron {
+  transform: rotate(90deg);
+}
+
+/* Height animates between 0 and the measured panel height. */
+.panel {
+  overflow: hidden;
+  height: var(--collapsible-panel-height);
+  transition: height 0.2s ease;
+}
+
+.panel[data-starting-style],
+.panel[data-ending-style] {
+  height: 0;
+}
+
+.body {
+  padding: 0 2px 12px;
+}

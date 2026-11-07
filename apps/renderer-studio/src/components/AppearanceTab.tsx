@@ -1,5 +1,6 @@
 import type { JSX } from "react";
 import {
+  Collapsible,
   GenderToggle,
   type Gender,
   PartPicker,
@@ -37,27 +38,29 @@ export function AppearanceTab({
 }): JSX.Element {
   return (
     <>
-      <label>Gender</label>
-      <GenderToggle value={gender} onChange={onGender} />
+      <Collapsible title="Gender & skin">
+        <label>Gender</label>
+        <GenderToggle value={gender} onChange={onGender} />
+        <label>Skin tone (sets face variant + body colour)</label>
+        <SkinSwatches tones={tones} value={tone} onChange={onTone} />
+      </Collapsible>
 
-      <label>Skin tone (sets face variant + body colour)</label>
-      <SkinSwatches tones={tones} value={tone} onChange={onTone} />
-
-      <label>Parts</label>
-      <button type="button" className="secondary" onClick={onRandomize}>
-        Randomize
-      </button>
-      <div className={styles.pickers}>
-        {parts.map((p) => (
-          <PartPicker
-            key={p.key}
-            label={p.label}
-            value={p.value}
-            options={p.options}
-            onChange={(v) => onChoose(p.key, v)}
-          />
-        ))}
-      </div>
+      <Collapsible title="Parts">
+        <button type="button" className="secondary" onClick={onRandomize}>
+          Randomize
+        </button>
+        <div className={styles.pickers}>
+          {parts.map((p) => (
+            <PartPicker
+              key={p.key}
+              label={p.label}
+              value={p.value}
+              options={p.options}
+              onChange={(v) => onChoose(p.key, v)}
+            />
+          ))}
+        </div>
+      </Collapsible>
     </>
   );
 }

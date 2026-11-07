@@ -1,5 +1,5 @@
 import type { JSX } from "react";
-import { Check, Select, Slider, Swatch } from "hattrick-ui";
+import { Check, Collapsible, Select, Slider, Swatch } from "hattrick-ui";
 import { UploadList } from "./UploadList.js";
 
 const FIT = [
@@ -30,17 +30,22 @@ export function BackgroundTab(props: {
 }): JSX.Element {
   return (
     <>
-      <label>Colour</label>
-      <Swatch value={props.bgColor} onChange={props.setBgColor} />
-      <Slider label="Opacity" value={props.bgAlpha} onChange={props.setBgAlpha} min={0} max={100} suffix="%" />
-      <Check label="Show image" checked={props.showBg} onChange={props.setShowBg} />
-      <label>Image</label>
-      <input type="file" accept="image/*" onChange={(e) => props.onUpload(e.target.files?.[0])} />
-      <UploadList items={props.bgName ? [{ name: props.bgName, onRemove: props.onRemove }] : []} />
-      <label>Image fit</label>
-      <Select value={props.bgFit} onChange={props.setBgFit} options={FIT} />
-      <label>Image position</label>
-      <Select value={props.bgPosition} onChange={props.setBgPosition} options={POS} />
+      <Collapsible title="Colour">
+        <label>Colour</label>
+        <Swatch value={props.bgColor} onChange={props.setBgColor} />
+        <Slider label="Opacity" value={props.bgAlpha} onChange={props.setBgAlpha} min={0} max={100} suffix="%" />
+      </Collapsible>
+
+      <Collapsible title="Image">
+        <Check label="Show image" checked={props.showBg} onChange={props.setShowBg} />
+        <label>Image</label>
+        <input type="file" accept="image/*" onChange={(e) => props.onUpload(e.target.files?.[0])} />
+        <UploadList items={props.bgName ? [{ name: props.bgName, onRemove: props.onRemove }] : []} />
+        <label>Image fit</label>
+        <Select value={props.bgFit} onChange={props.setBgFit} options={FIT} />
+        <label>Image position</label>
+        <Select value={props.bgPosition} onChange={props.setBgPosition} options={POS} />
+      </Collapsible>
     </>
   );
 }

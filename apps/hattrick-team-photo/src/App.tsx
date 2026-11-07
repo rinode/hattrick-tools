@@ -29,7 +29,6 @@ import {
 import { Loader } from "./components/Loader.js";
 import { SquadTab, type Role, type SquadRow } from "./components/SquadTab.js";
 import { LayoutTab } from "./components/LayoutTab.js";
-import { ShowTab } from "./components/ShowTab.js";
 import { TextTab } from "./components/TextTab.js";
 import { BackgroundTab } from "./components/BackgroundTab.js";
 import { LogoTab } from "./components/LogoTab.js";
@@ -584,18 +583,6 @@ export function App(): JSX.Element {
                   setStairFront={setStairFront}
                   stagger={stagger}
                   setStagger={setStagger}
-                />
-              ),
-            },
-            {
-              id: "display",
-              label: "Show",
-              content: (
-                <ShowTab
-                  showName={showName}
-                  setShowName={setShowName}
-                  showNames={showNames}
-                  setShowNames={setShowNames}
                   showStairs={showStairs}
                   setShowStairs={setShowStairs}
                 />
@@ -607,6 +594,8 @@ export function App(): JSX.Element {
               content: (
                 <TextTab
                   allFonts={allFonts}
+                  showName={showName}
+                  setShowName={setShowName}
                   headerFont={headerFont}
                   onHeaderFont={pickHeaderFont}
                   headerStyle={headerStyle}
@@ -615,6 +604,8 @@ export function App(): JSX.Element {
                   setHeaderSize={setHeaderSize}
                   headerColor={headerColor}
                   setHeaderColor={setHeaderColor}
+                  showNames={showNames}
+                  setShowNames={setShowNames}
                   namesFont={namesFont}
                   onNamesFont={pickNamesFont}
                   namesStyle={namesStyle}
