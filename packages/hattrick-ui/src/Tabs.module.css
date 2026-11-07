@@ -36,7 +36,10 @@
   color: var(--ink);
 }
 
-.tab[data-selected] {
+/* Key the highlight on aria-selected: it's always in sync with the real
+   selection (click, keyboard, or a value restored from storage), whereas
+   Base UI's data-selected is not set on a controlled value. */
+.tab[aria-selected="true"] {
   background: var(--accent);
   color: #fff;
 }
