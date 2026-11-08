@@ -19,6 +19,10 @@ export interface SquadRow {
   role: Role;
 }
 
+function poseLabel(n: number): string {
+  return n === 13 ? "Seated" : `Style ${n}`;
+}
+
 export function SquadTab(props: {
   authState: "connected" | "demo" | "";
   loginUrl: string;
@@ -30,7 +34,20 @@ export function SquadTab(props: {
   onToggle: (id: number) => void;
   onSetRole: (id: number, role: Role) => void;
   onMove: (index: number, delta: number) => void;
+  /** Player currently selected for a style override, or null. */
+  styledId: number | null;
+  onSelectPlayer: (id: number) => void;
+  /** Per-player body-type (pose) overrides, by player id. */
+  poses: Record<number, number>;
+  bodyTypes: readonly number[];
+  onSetPose: (id: number, bodyType: number) => void;
+  onResetPose: (id: number) => void;
 }): JSX.Element {
+  const styled = props.squad.find((p) => p.id === props.styledId) ?? null;
+  const poseOpts: SelectOption[] = [
+    { value: "", label: "Default" },
+    ...props.bodyTypes.map((n) => ({ value: String(n), label: poseLabel(n) })),
+  ];
   return (
     <div className={styles.body}>
       <div className={styles.auth}>
@@ -75,10 +92,7 @@ export function SquadTab(props: {
       </label>
       <div className={styles.squad}>
         {props.squad.map((item, i) => (
-          <div
-            key={item.id}
-            className={`${styles.item} ${item.enabled ? "" : styles.disabled}`}
-          >
+          <div key={item.id} className={`${styles.item} ${item.enabled ? "" : styles.disabled}`}>
             <Checkbox.Root
               className={styles.box}
               checked={item.enabled}
@@ -97,9 +111,17 @@ export function SquadTab(props: {
                 </svg>
               </Checkbox.Indicator>
             </Checkbox.Root>
-            <span className={styles.name}>
+            <button
+              type="button"
+              className={`${styles.name} ${item.id === props.styledId ? styles.selected : ""}`}
+              title="Override this player's style"
+              onClick={() => props.onSelectPlayer(item.id)}
+            >
               {item.number ? `${item.number}. ${item.name}` : item.name}
-            </span>
+              {props.poses[item.id] != null && (
+                <span className={styles.poseTag}>{poseLabel(props.poses[item.id]!)}</span>
+              )}
+            </button>
             <Select
               compact
               title="Kit group"
@@ -126,6 +148,32 @@ export function SquadTab(props: {
           </div>
         ))}
       </div>
+
+      <label>Player style</label>
+      {styled ? (
+        <div className={styles.style}>
+          <span className={styles.styleName}>{styled.name}</span>
+          <Select
+            compact
+            title="Pose"
+            value={String(props.poses[styled.id] ?? "")}
+            onChange={(v) =>
+              v === "" ? props.onResetPose(styled.id) : props.onSetPose(styled.id, Number(v))
+            }
+            options={poseOpts}
+          />
+          <button
+            type="button"
+            className={styles.reset}
+            disabled={props.poses[styled.id] == null}
+            onClick={() => props.onResetPose(styled.id)}
+          >
+            Reset
+          </button>
+        </div>
+      ) : (
+        <p className={styles.note}>Select a player above to override their pose.</p>
+      )}
     </div>
   );
 }

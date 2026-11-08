@@ -48,15 +48,78 @@
 
 .name {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+  padding: 2px 4px;
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.name:hover {
+  border-color: var(--line);
+}
+
+.name.selected {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.poseTag {
+  flex: none;
+  font-size: 11px;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  padding: 0 6px;
+  line-height: 16px;
+}
+
+.disabled .name {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.style {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.styleName {
+  flex: 1;
+  min-width: 0;
   font-size: 13px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.disabled .name {
-  color: var(--muted);
-  text-decoration: line-through;
+.reset {
+  flex: none;
+  height: 26px;
+  padding: 0 10px;
+  font-size: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.reset:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 .box {

@@ -1,6 +1,7 @@
 import { type JSX, useCallback, useEffect, useRef, useState } from "react";
 import { AppShell, Tabs } from "hattrick-ui";
 import {
+  BODY_TYPES,
   randomRenderInputs,
   renderInputs,
   renderInputsFromAvatar,
@@ -19,13 +20,7 @@ import {
   type LayoutOptions,
   type PhotoMeta,
 } from "hattrick-team-photo-compose";
-import {
-  customFonts,
-  defaultStyle,
-  ensureVariant,
-  loadFontList,
-  styleParts,
-} from "./fonts.js";
+import { customFonts, defaultStyle, ensureVariant, loadFontList, styleParts } from "./fonts.js";
 import { Loader } from "./components/Loader.js";
 import { SquadTab, type Role, type SquadRow } from "./components/SquadTab.js";
 import { LayoutTab } from "./components/LayoutTab.js";
@@ -61,6 +56,23 @@ function avatarInputs(avatar: PlayerAvatar, gender: number): RenderInputs {
   const inputs = renderInputsFromAvatar(avatar, { gender });
   inputs.kitJson = inputs.kitJson.replace(/^(?:https?:)?\/\/res\.hattrick\.org\//, "/_kit/");
   return inputs;
+}
+/**
+ * Re-point a figure's mesh and outline at a different body type (pose), keeping
+ * the same asset origin and variant folder. The body-type number is the only
+ * thing that differs between `.../uvs_m/kit_N_tri.json` and
+ * `.../outlines_vector_m/full_body_kit_N.svg`, so a targeted swap suffices.
+ */
+function withBodyType(inputs: RenderInputs, bodyType: number): RenderInputs {
+  return {
+    ...inputs,
+    bodyType,
+    meshPath: inputs.meshPath.replace(/kit_\d+_tri\.json/, `kit_${bodyType}_tri.json`),
+    outlinePath: inputs.outlinePath.replace(
+      /full_body_kit_\d+\.svg/,
+      `full_body_kit_${bodyType}.svg`,
+    ),
+  };
 }
 function bgFill(hex: string, alphaPct: number): string {
   const a = alphaPct / 100;
@@ -143,6 +155,10 @@ export function App(): JSX.Element {
   const [staffKit, setStaffKit] = useState("blank");
   const [customKits, setCustomKits] = useState<Record<string, string>>({});
 
+  // Per-player style overrides: player id -> body type (pose). Absent = original.
+  const [poses, setPoses] = useState<Record<number, number>>({});
+  const [styledId, setStyledId] = useState<number | null>(null);
+
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(0); // 0 = idle, else count rendered
   const [total, setTotal] = useState(0);
@@ -180,14 +196,17 @@ export function App(): JSX.Element {
   const kitChoiceFor = (item: SquadItem): string =>
     item.role === "keeper" ? keepersKit : item.role === "staff" ? staffKit : playersKit;
   const figureKey = (item: SquadItem): string =>
-    `${item.id}|${kitUrlFor(kitChoiceFor(item)) ?? "own"}`;
+    `${item.id}|${kitUrlFor(kitChoiceFor(item)) ?? "own"}|b${poses[item.id] ?? "d"}`;
   const inputsFor = (item: SquadItem): RenderInputs => {
+    let inp = item.inputs;
+    const pose = poses[item.id];
+    if (pose != null && pose !== inp.bodyType) inp = withBodyType(inp, pose);
     const override = kitUrlFor(kitChoiceFor(item));
-    return override ? { ...item.inputs, kitJson: override } : item.inputs;
+    return override ? { ...inp, kitJson: override } : inp;
   };
 
-  // --- Render every figure once into the cache (keyed by id|kit). -----------
-  const renderSig = squad.map((i) => `${i.id}:${i.role}`).join(",");
+  // --- Render every figure once into the cache (keyed by id|kit|pose). -------
+  const renderSig = squad.map((i) => `${i.id}:${i.role}:${poses[i.id] ?? "d"}`).join(",");
   useEffect(() => {
     if (!squad.length) return;
     let cancelled = false;
@@ -570,6 +589,19 @@ export function App(): JSX.Element {
                   onToggle={toggle}
                   onSetRole={setRole}
                   onMove={move}
+                  styledId={styledId}
+                  onSelectPlayer={(id) => setStyledId((cur) => (cur === id ? null : id))}
+                  poses={poses}
+                  bodyTypes={BODY_TYPES}
+                  onSetPose={(id, bt) => setPoses((p) => ({ ...p, [id]: bt }))}
+                  onResetPose={(id) =>
+                    setPoses((p) => {
+                      if (p[id] == null) return p;
+                      const rest = { ...p };
+                      delete rest[id];
+                      return rest;
+                    })
+                  }
                 />
               ),
             },
