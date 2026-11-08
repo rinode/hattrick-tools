@@ -103,7 +103,7 @@ export function PlayerStudioModal({
 
           <div className={styles.body}>
             <div className={styles.preview}>
-              <AvatarFigure inputs={inputs} engine={engine} />
+              <AvatarFigure inputs={inputs} engine={engine} className={styles.fig} />
             </div>
             <div className={styles.controls}>
               <Tabs
