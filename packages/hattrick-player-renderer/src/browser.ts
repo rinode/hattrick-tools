@@ -52,12 +52,31 @@ function loadScript(url: string): Promise<void> {
   });
 }
 
+/**
+ * Our added body type 13 (seated). The stock engine only knows types 1–12 (+20)
+ * in its `bodyTypeMap` (external→internal) and `neck_pos_body` (face Y per body).
+ * A missing entry makes the remap yield `undefined` and the face Y become NaN, so
+ * we register 13 on the global SlimKitRenderer after it loads — no edits to the
+ * vendored engine. 13 maps to itself; its neck sits one body-8 collar + the 46px
+ * the seated torso was lowered (body 8 → internal 9, neck 127, +46 = 173).
+ */
+function registerCustomBodyTypes(): void {
+  const skr = (window as unknown as { SlimKitRenderer?: { bodyTypeMap?: { h: Record<number, number> }; neck_pos_body?: { h: Record<number, number> } } }).SlimKitRenderer;
+  const map = skr?.bodyTypeMap?.h;
+  const neck = skr?.neck_pos_body?.h;
+  if (map && neck && map[13] === undefined) {
+    map[13] = 13;
+    neck[13] = 173;
+  }
+}
+
 /** Loads Hattrick's renderer scripts and resolves once `HT.FullBodies` exists. */
 export async function loadRenderer(opts: RendererOptions = {}): Promise<HtFullBodies> {
   await loadScript(opts.slimKitUrl ?? DEFAULT_SLIMKIT_URL);
   await loadScript(opts.fullBodiesUrl ?? DEFAULT_FULLBODIES_URL);
   const fb = window.HT?.FullBodies;
   if (!fb) throw new Error("HT.FullBodies not available after loading renderer scripts");
+  registerCustomBodyTypes();
   return fb;
 }
 

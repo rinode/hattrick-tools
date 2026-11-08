@@ -3,8 +3,8 @@ import { allVendorPaths, BODY_TYPES, staticAssetPaths } from "../src/assets.js";
 
 describe("static asset manifest", () => {
   it("lists three files per body type (svg, mesh, shape)", () => {
-    expect(BODY_TYPES).toHaveLength(12);
-    expect(staticAssetPaths()).toHaveLength(36);
+    expect(BODY_TYPES).toHaveLength(13);
+    expect(staticAssetPaths()).toHaveLength(39);
     expect(staticAssetPaths()).toContain(
       "/Club/Players/Avatars/fullbody_assets/outlines_vector_m/full_body_kit_10.svg",
     );
@@ -17,6 +17,6 @@ describe("static asset manifest", () => {
     const all = allVendorPaths();
     expect(all).toContain("/Club/Players/Avatars/slimkitrender.js");
     expect(all).toContain("/Club/Players/Avatars/HT.FullBodies.js");
-    expect(all).toHaveLength(38);
+    expect(all).toHaveLength(41);
   });
 });

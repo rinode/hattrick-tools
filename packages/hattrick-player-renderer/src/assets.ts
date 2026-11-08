@@ -5,7 +5,7 @@
  * served locally (see scripts/fetch-assets.mjs). Per-player face PNGs and
  * kit data are dynamic and come from the input-provision step instead.
  */
-export const BODY_TYPES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] as const;
+export const BODY_TYPES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13] as const;
 
 /** Variant folders. Hattrick currently ships a single male vector set. */
 export const VARIANT = "m";
