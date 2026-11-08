@@ -8,8 +8,8 @@ import {
   type RenderInputs,
   type RenderOutput,
 } from "hattrick-player-renderer";
-import { deriveStudio, inputsToStudio, type StudioState } from "hattrick-studio";
-import { PlayerStudioModal } from "./components/PlayerStudioModal.js";
+import { deriveStudio, inputsToStudio } from "hattrick-studio";
+import { PlayerStudioModal, type PlayerOverride } from "./components/PlayerStudioModal.js";
 import {
   composeTeamPhoto,
   computeLayout,
@@ -139,8 +139,8 @@ export function App(): JSX.Element {
   const [staffKit, setStaffKit] = useState("blank");
   const [customKits, setCustomKits] = useState<Record<string, string>>({});
 
-  // Per-player full style overrides: player id -> studio state. Absent = original.
-  const [overrides, setOverrides] = useState<Record<number, StudioState>>({});
+  // Per-player overrides: name, number and full studio style. Absent = original.
+  const [overrides, setOverrides] = useState<Record<number, PlayerOverride>>({});
   // The player whose studio modal is open, or null.
   const [studioId, setStudioId] = useState<number | null>(null);
 
@@ -182,15 +182,18 @@ export function App(): JSX.Element {
     item.role === "keeper" ? keepersKit : item.role === "staff" ? staffKit : playersKit;
   const figureKey = (item: SquadItem): string => {
     const ov = overrides[item.id];
-    if (ov) return `${item.id}|ov:${JSON.stringify(ov)}`;
+    // Only the style affects the figure; name/number change the footer only.
+    if (ov) return `${item.id}|ov:${JSON.stringify(ov.style)}`;
     return `${item.id}|${kitUrlFor(kitChoiceFor(item)) ?? "own"}`;
   };
   const inputsFor = (item: SquadItem): RenderInputs => {
     const ov = overrides[item.id];
-    if (ov) return deriveStudio(ov, BASE).inputs;
+    if (ov) return deriveStudio(ov.style, BASE).inputs;
     const override = kitUrlFor(kitChoiceFor(item));
     return override ? { ...item.inputs, kitJson: override } : item.inputs;
   };
+  const nameFor = (item: SquadItem): string => overrides[item.id]?.name ?? item.name;
+  const numberFor = (item: SquadItem): number => overrides[item.id]?.number ?? item.number;
 
   const overrideIds = new Set(Object.keys(overrides).map(Number));
   const studioPlayer = studioId == null ? null : (squad.find((i) => i.id === studioId) ?? null);
@@ -264,7 +267,7 @@ export function App(): JSX.Element {
       const { w, h } = naturalSize(c);
       rendered.push(c);
       widths.push(h > 0 ? w * (opts.figureHeight / h) : opts.figureWidth);
-      members.push({ number: item.number, name: item.name });
+      members.push({ number: numberFor(item), name: nameFor(item) });
     }
     const hs = styleParts(headerStyle);
     const ns = styleParts(namesStyle);
@@ -344,6 +347,7 @@ export function App(): JSX.Element {
     keepersKit,
     staffKit,
     customKits,
+    overrides,
   ]);
 
   useEffect(() => {
@@ -750,16 +754,19 @@ export function App(): JSX.Element {
       {studioPlayer && (
         <PlayerStudioModal
           key={studioPlayer.id}
-          playerName={
-            studioPlayer.number ? `${studioPlayer.number}. ${studioPlayer.name}` : studioPlayer.name
-          }
           base={BASE}
           engine={ENGINE}
-          initial={overrides[studioPlayer.id] ?? inputsToStudio(studioPlayer.inputs)}
+          initial={
+            overrides[studioPlayer.id] ?? {
+              name: studioPlayer.name,
+              number: studioPlayer.number,
+              style: inputsToStudio(studioPlayer.inputs),
+            }
+          }
           hasOverride={studioPlayer.id in overrides}
-          onApply={(state) => {
+          onApply={(ov) => {
             const id = studioPlayer.id;
-            setOverrides((o) => ({ ...o, [id]: state }));
+            setOverrides((o) => ({ ...o, [id]: ov }));
             setStudioId(null);
           }}
           onReset={() => {

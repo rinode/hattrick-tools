@@ -1,6 +1,6 @@
 import { type JSX, useState } from "react";
 import { Dialog } from "@base-ui/react/dialog";
-import { Tabs } from "hattrick-ui";
+import { NumberField, Tabs } from "hattrick-ui";
 import { type RendererOptions } from "hattrick-player-renderer";
 import { AvatarFigure } from "hattrick-player-renderer-react";
 import {
@@ -18,13 +18,20 @@ import styles from "./PlayerStudioModal.module.css";
 
 const randOf = <T,>(arr: T[]): T | undefined => arr[Math.floor(Math.random() * arr.length)];
 
+/** A player's full override: shirt name, number and the studio style. */
+export interface PlayerOverride {
+  name: string;
+  number: number;
+  style: StudioState;
+}
+
 /**
  * Full player-renderer studio for one squad member, over the stage. Edits a
- * draft studio state with a live preview; Apply commits it as that player's
- * override, Reset clears any override (back to the real avatar), Cancel discards.
+ * draft override (name, number and studio style) with a live preview; Apply
+ * commits it, Reset clears any override (back to the real avatar), Cancel
+ * discards.
  */
 export function PlayerStudioModal({
-  playerName,
   base,
   engine,
   initial,
@@ -33,16 +40,17 @@ export function PlayerStudioModal({
   onReset,
   onClose,
 }: {
-  playerName: string;
   base: string;
   engine: RendererOptions;
-  initial: StudioState;
+  initial: PlayerOverride;
   hasOverride: boolean;
-  onApply: (state: StudioState) => void;
+  onApply: (override: PlayerOverride) => void;
   onReset: () => void;
   onClose: () => void;
 }): JSX.Element {
-  const [draft, setDraft] = useState<StudioState>(initial);
+  const [name, setName] = useState(initial.name);
+  const [number, setNumber] = useState(initial.number);
+  const [draft, setDraft] = useState<StudioState>(initial.style);
   const patch = (p: Partial<StudioState>): void => setDraft((d) => ({ ...d, ...p }));
 
   const { shape, shapes, tones, parts, inputs, bodyOptions } = deriveStudio(draft, base);
@@ -75,10 +83,22 @@ export function PlayerStudioModal({
         <Dialog.Backdrop className={styles.backdrop} />
         <Dialog.Popup className={styles.popup}>
           <div className={styles.head}>
-            <Dialog.Title className={styles.title}>Style · {playerName}</Dialog.Title>
+            <Dialog.Title className={styles.title}>
+              Style · {number ? `${number}. ${name}` : name}
+            </Dialog.Title>
             <Dialog.Close className={styles.x} aria-label="Close">
               ✕
             </Dialog.Close>
+          </div>
+
+          <div className={styles.idFields}>
+            <label className={styles.nameField}>
+              <span>Name</span>
+              <input type="text" value={name} onChange={(e) => setName(e.target.value)} />
+            </label>
+            <div className={styles.numberField}>
+              <NumberField label="Number" value={number} onChange={setNumber} min={0} max={999} />
+            </div>
           </div>
 
           <div className={styles.body}>
@@ -141,13 +161,17 @@ export function PlayerStudioModal({
               disabled={!hasOverride}
               onClick={onReset}
             >
-              Reset to original
+              Reset
             </button>
             <div className={styles.footRight}>
               <button type="button" className={styles.cancel} onClick={onClose}>
                 Cancel
               </button>
-              <button type="button" className={styles.apply} onClick={() => onApply(draft)}>
+              <button
+                type="button"
+                className={styles.apply}
+                onClick={() => onApply({ name, number, style: draft })}
+              >
                 Apply
               </button>
             </div>
