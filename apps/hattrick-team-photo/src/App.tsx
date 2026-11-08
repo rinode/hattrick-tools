@@ -194,6 +194,14 @@ export function App(): JSX.Element {
   };
   const nameFor = (item: SquadItem): string => overrides[item.id]?.name ?? item.name;
   const numberFor = (item: SquadItem): number => overrides[item.id]?.number ?? item.number;
+  // Seed the studio from how the player currently looks in the photo: the real
+  // avatar plus the team kit the dropdown assigns for their role (keeper = away,
+  // etc.), falling back to the player's own kit when no team kit is set.
+  const seedStudioFor = (item: SquadItem): PlayerOverride => {
+    const style = inputsToStudio(item.inputs);
+    style.kitJson = kitUrlFor(kitChoiceFor(item)) ?? item.inputs.kitJson;
+    return { name: item.name, number: item.number, style };
+  };
 
   const overrideIds = new Set(Object.keys(overrides).map(Number));
   const studioPlayer = studioId == null ? null : (squad.find((i) => i.id === studioId) ?? null);
@@ -756,13 +764,7 @@ export function App(): JSX.Element {
           key={studioPlayer.id}
           base={BASE}
           engine={ENGINE}
-          initial={
-            overrides[studioPlayer.id] ?? {
-              name: studioPlayer.name,
-              number: studioPlayer.number,
-              style: inputsToStudio(studioPlayer.inputs),
-            }
-          }
+          initial={overrides[studioPlayer.id] ?? seedStudioFor(studioPlayer)}
           hasOverride={studioPlayer.id in overrides}
           onApply={(ov) => {
             const id = studioPlayer.id;
