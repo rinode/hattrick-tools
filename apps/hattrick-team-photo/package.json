@@ -15,6 +15,7 @@
     "@base-ui/react": "^1.9.0",
     "hattrick-player-renderer": "workspace:*",
     "hattrick-player-renderer-react": "workspace:*",
+    "hattrick-studio": "workspace:*",
     "hattrick-team-photo-compose": "workspace:*",
     "hattrick-theme": "workspace:*",
     "hattrick-ui": "workspace:*",

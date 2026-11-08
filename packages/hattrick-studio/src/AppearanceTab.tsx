@@ -4,18 +4,11 @@ import {
   GenderToggle,
   type Gender,
   PartPicker,
-  type PickerOption,
   SkinSwatches,
   type ToneSwatch,
 } from "hattrick-ui";
+import type { PartData } from "./studio-model.js";
 import styles from "./AppearanceTab.module.css";
-
-export interface PartData {
-  key: string;
-  label: string;
-  value: string;
-  options: PickerOption[];
-}
 
 export function AppearanceTab({
   gender,

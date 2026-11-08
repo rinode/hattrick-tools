@@ -13,6 +13,7 @@
   "dependencies": {
     "hattrick-player-renderer": "workspace:*",
     "hattrick-player-renderer-react": "workspace:*",
+    "hattrick-studio": "workspace:*",
     "hattrick-theme": "workspace:*",
     "hattrick-ui": "workspace:*",
     "react": "^19.3.1",

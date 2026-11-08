@@ -1,7 +1,6 @@
 import { type JSX, useCallback, useEffect, useRef, useState } from "react";
 import { AppShell, Tabs } from "hattrick-ui";
 import {
-  BODY_TYPES,
   randomRenderInputs,
   renderInputs,
   renderInputsFromAvatar,
@@ -9,6 +8,8 @@ import {
   type RenderInputs,
   type RenderOutput,
 } from "hattrick-player-renderer";
+import { deriveStudio, inputsToStudio, type StudioState } from "hattrick-studio";
+import { PlayerStudioModal } from "./components/PlayerStudioModal.js";
 import {
   composeTeamPhoto,
   computeLayout,
@@ -56,23 +57,6 @@ function avatarInputs(avatar: PlayerAvatar, gender: number): RenderInputs {
   const inputs = renderInputsFromAvatar(avatar, { gender });
   inputs.kitJson = inputs.kitJson.replace(/^(?:https?:)?\/\/res\.hattrick\.org\//, "/_kit/");
   return inputs;
-}
-/**
- * Re-point a figure's mesh and outline at a different body type (pose), keeping
- * the same asset origin and variant folder. The body-type number is the only
- * thing that differs between `.../uvs_m/kit_N_tri.json` and
- * `.../outlines_vector_m/full_body_kit_N.svg`, so a targeted swap suffices.
- */
-function withBodyType(inputs: RenderInputs, bodyType: number): RenderInputs {
-  return {
-    ...inputs,
-    bodyType,
-    meshPath: inputs.meshPath.replace(/kit_\d+_tri\.json/, `kit_${bodyType}_tri.json`),
-    outlinePath: inputs.outlinePath.replace(
-      /full_body_kit_\d+\.svg/,
-      `full_body_kit_${bodyType}.svg`,
-    ),
-  };
 }
 function bgFill(hex: string, alphaPct: number): string {
   const a = alphaPct / 100;
@@ -155,9 +139,10 @@ export function App(): JSX.Element {
   const [staffKit, setStaffKit] = useState("blank");
   const [customKits, setCustomKits] = useState<Record<string, string>>({});
 
-  // Per-player style overrides: player id -> body type (pose). Absent = original.
-  const [poses, setPoses] = useState<Record<number, number>>({});
-  const [styledId, setStyledId] = useState<number | null>(null);
+  // Per-player full style overrides: player id -> studio state. Absent = original.
+  const [overrides, setOverrides] = useState<Record<number, StudioState>>({});
+  // The player whose studio modal is open, or null.
+  const [studioId, setStudioId] = useState<number | null>(null);
 
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(0); // 0 = idle, else count rendered
@@ -195,18 +180,24 @@ export function App(): JSX.Element {
   }
   const kitChoiceFor = (item: SquadItem): string =>
     item.role === "keeper" ? keepersKit : item.role === "staff" ? staffKit : playersKit;
-  const figureKey = (item: SquadItem): string =>
-    `${item.id}|${kitUrlFor(kitChoiceFor(item)) ?? "own"}|b${poses[item.id] ?? "d"}`;
+  const figureKey = (item: SquadItem): string => {
+    const ov = overrides[item.id];
+    if (ov) return `${item.id}|ov:${JSON.stringify(ov)}`;
+    return `${item.id}|${kitUrlFor(kitChoiceFor(item)) ?? "own"}`;
+  };
   const inputsFor = (item: SquadItem): RenderInputs => {
-    let inp = item.inputs;
-    const pose = poses[item.id];
-    if (pose != null && pose !== inp.bodyType) inp = withBodyType(inp, pose);
+    const ov = overrides[item.id];
+    if (ov) return deriveStudio(ov, BASE).inputs;
     const override = kitUrlFor(kitChoiceFor(item));
-    return override ? { ...inp, kitJson: override } : inp;
+    return override ? { ...item.inputs, kitJson: override } : item.inputs;
   };
 
-  // --- Render every figure once into the cache (keyed by id|kit|pose). -------
-  const renderSig = squad.map((i) => `${i.id}:${i.role}:${poses[i.id] ?? "d"}`).join(",");
+  const overrideIds = new Set(Object.keys(overrides).map(Number));
+  const studioPlayer = studioId == null ? null : (squad.find((i) => i.id === studioId) ?? null);
+
+  // --- Render every figure once into the cache (keyed by id|kit, or id|override).
+  const renderSig =
+    squad.map((i) => `${i.id}:${i.role}`).join(",") + "|" + JSON.stringify(overrides);
   useEffect(() => {
     if (!squad.length) return;
     let cancelled = false;
@@ -589,19 +580,8 @@ export function App(): JSX.Element {
                   onToggle={toggle}
                   onSetRole={setRole}
                   onMove={move}
-                  styledId={styledId}
-                  onSelectPlayer={(id) => setStyledId((cur) => (cur === id ? null : id))}
-                  poses={poses}
-                  bodyTypes={BODY_TYPES}
-                  onSetPose={(id, bt) => setPoses((p) => ({ ...p, [id]: bt }))}
-                  onResetPose={(id) =>
-                    setPoses((p) => {
-                      if (p[id] == null) return p;
-                      const rest = { ...p };
-                      delete rest[id];
-                      return rest;
-                    })
-                  }
+                  overriddenIds={overrideIds}
+                  onEditPlayer={setStudioId}
                 />
               ),
             },
@@ -767,6 +747,34 @@ export function App(): JSX.Element {
           </div>
         )}
       </div>
+      {studioPlayer && (
+        <PlayerStudioModal
+          key={studioPlayer.id}
+          playerName={
+            studioPlayer.number ? `${studioPlayer.number}. ${studioPlayer.name}` : studioPlayer.name
+          }
+          base={BASE}
+          engine={ENGINE}
+          initial={overrides[studioPlayer.id] ?? inputsToStudio(studioPlayer.inputs)}
+          hasOverride={studioPlayer.id in overrides}
+          onApply={(state) => {
+            const id = studioPlayer.id;
+            setOverrides((o) => ({ ...o, [id]: state }));
+            setStudioId(null);
+          }}
+          onReset={() => {
+            const id = studioPlayer.id;
+            setOverrides((o) => {
+              if (!(id in o)) return o;
+              const rest = { ...o };
+              delete rest[id];
+              return rest;
+            });
+            setStudioId(null);
+          }}
+          onClose={() => setStudioId(null)}
+        />
+      )}
     </AppShell>
   );
 }

@@ -1,21 +1,18 @@
-import { type JSX, useMemo, useRef, useState } from "react";
-import { AppShell, type PickerOption, Tabs } from "hattrick-ui";
+import { type JSX, useRef, useState } from "react";
+import { AppShell, Tabs } from "hattrick-ui";
 import { AvatarFigure } from "hattrick-player-renderer-react";
-import { BODY_TYPES, type RenderOutput } from "hattrick-player-renderer";
+import { type RenderOutput } from "hattrick-player-renderer";
 import {
-  assetPathsForBody,
+  AppearanceTab,
+  BodyTab,
+  deriveStudio,
   FACE,
-  faceShapes,
   type Gender,
-  gatherInputs,
-  optionLabel,
   optionsFor,
-  optionThumbUrl,
   partsFor,
+  type StudioState,
   toneTable,
-} from "./studio-model.js";
-import { AppearanceTab, type PartData } from "./components/AppearanceTab.js";
-import { BodyTab } from "./components/BodyTab.js";
+} from "hattrick-studio";
 import { ExportTab } from "./components/ExportTab.js";
 import styles from "./App.module.css";
 
@@ -43,56 +40,20 @@ export function App(): JSX.Element {
 
   const lastOutput = useRef<RenderOutput | null>(null);
 
-  const tones = toneTable(gender);
-  const shapes = faceShapes(gender);
-  const shape = shapes[Math.min(shapeIdx, shapes.length - 1)] ?? "1";
+  const state: StudioState = {
+    gender,
+    tone,
+    shapeIdx,
+    sel,
+    bodyType,
+    width,
+    neckPosition,
+    hairOffsetX,
+    hairOffsetY,
+    kitJson,
+  };
+  const { shape, shapes, tones, parts, inputs, bodyOptions } = deriveStudio(state, BASE);
   const cfgs = partsFor(gender);
-
-  // Effective selection (fall back to a valid default) + the picker option lists.
-  const effSel: Record<string, string> = {};
-  const parts: PartData[] = cfgs.map((cfg) => {
-    if (cfg.key === FACE) {
-      return {
-        key: cfg.key,
-        label: cfg.label,
-        value: shape,
-        options: shapes.map((sVal) => ({
-          value: sVal,
-          label: `shape ${sVal}`,
-          thumbUrl: optionThumbUrl(BASE, gender, cfg, tone, sVal),
-        })),
-      };
-    }
-    const files = optionsFor(gender, shape, cfg);
-    const raw = sel[cfg.key];
-    const valid = raw === "" ? cfg.optional : raw !== undefined && files.includes(raw);
-    const value = valid ? (raw as string) : cfg.optional ? "" : (files[0] ?? "");
-    effSel[cfg.key] = value;
-    const options: PickerOption[] = [
-      ...(cfg.optional ? [{ value: "", label: "none" } as PickerOption] : []),
-      ...files.map((f) => ({
-        value: f,
-        label: optionLabel(cfg, f),
-        thumbUrl: optionThumbUrl(BASE, gender, cfg, tone, f),
-      })),
-    ];
-    return { key: cfg.key, label: cfg.label, value, options };
-  });
-
-  const inputs = gatherInputs(
-    { gender, tone, shape, sel: effSel },
-    { bodyType, width, neckPosition, hairOffsetX, hairOffsetY, kitJson },
-  );
-
-  const bodyOptions: PickerOption[] = useMemo(
-    () =>
-      BODY_TYPES.map((n) => ({
-        value: String(n),
-        label: `body ${n}`,
-        thumbUrl: assetPathsForBody(n, BASE).outlinePath,
-      })),
-    [],
-  );
 
   function switchGender(g: Gender): void {
     setGender(g);
@@ -178,7 +139,11 @@ export function App(): JSX.Element {
                 />
               ),
             },
-            { id: "export", label: "Export", content: <ExportTab onExport={exportPng} status={status} /> },
+            {
+              id: "export",
+              label: "Export",
+              content: <ExportTab onExport={exportPng} status={status} />,
+            },
           ]}
         />
       }
@@ -195,7 +160,9 @@ export function App(): JSX.Element {
                 : `${out.naturalWidth}×${out.naturalHeight}`;
             setStatus(`Rendered ${size}.`);
           }}
-          onError={(err) => setStatus("Error: " + (err instanceof Error ? err.message : String(err)))}
+          onError={(err) =>
+            setStatus("Error: " + (err instanceof Error ? err.message : String(err)))
+          }
         />
       </div>
     </AppShell>

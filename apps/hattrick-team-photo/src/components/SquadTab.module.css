@@ -90,38 +90,6 @@
   text-decoration: line-through;
 }
 
-.style {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 6px;
-}
-
-.styleName {
-  flex: 1;
-  min-width: 0;
-  font-size: 13px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.reset {
-  flex: none;
-  height: 26px;
-  padding: 0 10px;
-  font-size: 12px;
-  background: var(--surface);
-  color: var(--ink);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-}
-
-.reset:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-
 .box {
   width: 18px;
   height: 18px;

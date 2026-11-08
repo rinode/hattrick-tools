@@ -1,0 +1,28 @@
+{
+  "name": "hattrick-studio",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Shared player-renderer studio: catalog-driven appearance/body model, the Appearance and Body tabs, and RenderInputs assembly. Used by the renderer-studio app and the team-photo per-player override.",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "hattrick-player-renderer": "workspace:*",
+    "hattrick-ui": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  }
+}
