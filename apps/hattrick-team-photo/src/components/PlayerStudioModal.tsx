@@ -163,18 +163,16 @@ export function PlayerStudioModal({
             >
               Reset
             </button>
-            <div className={styles.footRight}>
-              <button type="button" className={styles.cancel} onClick={onClose}>
-                Cancel
-              </button>
-              <button
-                type="button"
-                className={styles.apply}
-                onClick={() => onApply({ name, number, style: draft })}
-              >
-                Apply
-              </button>
-            </div>
+            <button type="button" className={styles.cancel} onClick={onClose}>
+              Cancel
+            </button>
+            <button
+              type="button"
+              className={styles.apply}
+              onClick={() => onApply({ name, number, style: draft })}
+            >
+              Apply
+            </button>
           </div>
         </Dialog.Popup>
       </Dialog.Portal>
